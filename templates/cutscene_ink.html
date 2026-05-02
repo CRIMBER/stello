@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>STELLO</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@900&family=DM+Mono:wght@300&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100vw;height:100vh;overflow:hidden;background:#f0ebe0}
+#cs{position:fixed;inset:0;z-index:9999;background:#f0ebe0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+#cs.out{animation:csOut .9s ease forwards}
+@keyframes csOut{to{opacity:0;pointer-events:none}}
+canvas#ink{position:absolute;inset:0;width:100%;height:100%}
+
+/* center content */
+.center{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:0;pointer-events:none}
+
+/* kanji brushed in */
+.kanji{
+  font-family:'Noto Serif JP',serif;font-size:clamp(80px,16vw,140px);font-weight:900;
+  color:#0d0a06;letter-spacing:.04em;line-height:1;
+  clip-path:inset(0 100% 0 0);
+  animation:brushReveal 1.4s cubic-bezier(.16,1,.3,1) .8s forwards;
+}
+@keyframes brushReveal{to{clip-path:inset(0 0% 0 0)}}
+
+.line{width:0;height:2px;background:#1a1209;margin:18px auto;animation:lineGrow .6s ease 2.1s forwards}
+@keyframes lineGrow{to{width:140px}}
+
+.name{
+  font-family:'DM Mono',monospace;font-size:clamp(11px,2vw,15px);
+  letter-spacing:.55em;color:#5c3d1e;font-weight:300;text-transform:uppercase;
+  opacity:0;animation:fadeUp .5s ease 2.4s forwards;
+}
+.sub{
+  font-size:11px;color:#8c7355;letter-spacing:.22em;
+  opacity:0;animation:fadeUp .5s ease 2.7s forwards;font-family:'DM Mono',monospace;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* seal stamp */
+.seal{
+  position:absolute;bottom:38px;right:38px;
+  opacity:0;animation:stamp .3s cubic-bezier(.36,.07,.19,.97) 3.2s forwards;
+}
+@keyframes stamp{0%{opacity:0;transform:scale(2.5) rotate(-25deg)}70%{opacity:1;transform:scale(.93) rotate(3deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+
+/* hint */
+.hint{
+  position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.3em;
+  color:#8c7355;text-transform:uppercase;white-space:nowrap;
+  opacity:0;animation:hintP 1.5s ease 4s infinite;
+}
+@keyframes hintP{0%,100%{opacity:.2}50%{opacity:.65}}
+
+#skip{position:fixed;bottom:20px;right:20px;z-index:99999;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;color:rgba(92,61,30,.32);background:none;border:1px solid rgba(92,61,30,.18);padding:6px 13px;cursor:pointer;text-transform:uppercase;opacity:0;animation:fadeUp 1s 1.2s ease forwards}
+#skip:hover{color:rgba(92,61,30,.7)}
+#app{position:fixed;inset:0;z-index:50;opacity:0;pointer-events:none;transition:opacity .85s ease}
+#app.visible{opacity:1;pointer-events:all}
+#app iframe{width:100%;height:100%;border:none;display:block}
+</style>
+</head>
+<body>
+<div id="cs">
+  <canvas id="ink"></canvas>
+
+  <div class="center">
+    <div class="kanji">星路</div>
+    <div class="line"></div>
+    <div class="name">STELLO</div>
+    <div class="sub" style="margin-top:6px">your AI · your path · your rules</div>
+  </div>
+
+  <svg class="seal" width="56" height="56" viewBox="0 0 56 56">
+    <circle cx="28" cy="28" r="26" fill="#8b0000" opacity=".92"/>
+    <circle cx="28" cy="28" r="22" fill="none" stroke="#c41c1c" stroke-width=".8"/>
+    <text x="28" y="35" text-anchor="middle" font-family="Noto Serif JP" font-size="17" font-weight="900" fill="#f5e0d0">星</text>
+  </svg>
+
+  <div class="hint">— touch anywhere to enter —</div>
+</div>
+
+<button id="skip" onclick="enter()">skip</button>
+<div id="app"><iframe src="/main" loading="eager"></iframe></div>
+
+<script>
+const canvas = document.getElementById('ink');
+const ctx = canvas.getContext('2d');
+let W, H, raf, entered = false;
+
+function resize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize(); addEventListener('resize', resize);
+
+// Falling ink drops
+const drops = Array.from({length:30}, () => ({
+  x: Math.random() * 2000, y: Math.random() * -500,
+  vy: Math.random() * .35 + .08, size: Math.random() * 2.5 + .8, op: Math.random() * .055 + .012
+}));
+
+// Ink splatter blobs (appear later)
+const blobs = Array.from({length:8}, (_, i) => ({
+  x: Math.random() * 1.0, y: Math.random() * 1.0,
+  r: Math.random() * 40 + 15, op: 0, delay: 2000 + i * 200
+}));
+const startTime = Date.now();
+
+function tick(){
+  ctx.clearRect(0, 0, W, H);
+  const elapsed = Date.now() - startTime;
+
+  // drops
+  drops.forEach(d => {
+    d.y += d.vy;
+    if (d.y > H + 10) { d.y = -12; d.x = Math.random() * W; }
+    ctx.beginPath();
+    ctx.ellipse(d.x, d.y, d.size * .55, d.size, 0, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(13,10,6,${d.op})`;
+    ctx.fill();
+  });
+
+  // blobs fade in
+  blobs.forEach(b => {
+    if (elapsed > b.delay) {
+      b.op = Math.min(.06, b.op + .001);
+      const g = ctx.createRadialGradient(b.x*W, b.y*H, 0, b.x*W, b.y*H, b.r);
+      g.addColorStop(0, `rgba(26,18,9,${b.op})`);
+      g.addColorStop(1, `rgba(26,18,9,0)`);
+      ctx.beginPath(); ctx.arc(b.x*W, b.y*H, b.r, 0, Math.PI*2);
+      ctx.fillStyle = g; ctx.fill();
+    }
+  });
+
+  if (!entered) raf = requestAnimationFrame(tick);
+}
+raf = requestAnimationFrame(tick);
+
+let canEnter = false;
+setTimeout(() => canEnter = true, 2200);
+setTimeout(() => enter(), 7500);
+document.getElementById('cs').addEventListener('click', () => { if (canEnter) enter(); });
+document.addEventListener('keydown', e => { if (['Enter',' ','Escape'].includes(e.key) && canEnter) enter(); });
+
+function enter(){
+  if (entered) return; entered = true;
+  cancelAnimationFrame(raf);
+  document.getElementById('skip').style.display = 'none';
+  document.getElementById('cs').classList.add('out');
+  document.getElementById('app').classList.add('visible');
+  setTimeout(() => document.getElementById('cs').style.display = 'none', 950);
+}
+</script>
+</body>
+</html>

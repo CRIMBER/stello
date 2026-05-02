@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>STELLO · SPACE ∞</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100vw;height:100vh;overflow:hidden;background:#000}
+#cs{position:fixed;inset:0;z-index:9999;background:#000;overflow:hidden;cursor:pointer}
+#cs.out{animation:csOut .9s ease forwards}
+@keyframes csOut{to{opacity:0;pointer-events:none}}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* Wormhole ring */
+.wormhole{
+  position:absolute;top:50%;left:50%;
+  width:min(480px,78vw);height:min(480px,78vw);
+  border-radius:50%;transform:translate(-50%,-50%) scale(0);
+  border:1.5px solid rgba(100,180,255,.4);
+  box-shadow:0 0 60px rgba(80,140,255,.3),inset 0 0 60px rgba(80,140,255,.18);
+  opacity:0;
+  animation:whOpen 1.6s cubic-bezier(.16,1,.3,1) .4s forwards;
+}
+@keyframes whOpen{0%{transform:translate(-50%,-50%) scale(0) rotate(0deg);opacity:0}50%{opacity:1}100%{transform:translate(-50%,-50%) scale(1) rotate(360deg);opacity:1}}
+.wormhole::before{content:'';position:absolute;inset:10px;border-radius:50%;border:1px solid rgba(150,200,255,.25);animation:spin 5s linear infinite}
+.wormhole::after{content:'';position:absolute;inset:24px;border-radius:50%;border:.5px solid rgba(200,220,255,.15);animation:spin 8s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Planet */
+.planet{
+  position:absolute;top:50%;left:50%;
+  width:clamp(70px,11vw,110px);height:clamp(70px,11vw,110px);
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#4a90d9,#1a3a6e 50%,#0a1a3a);
+  box-shadow:0 0 50px rgba(74,144,217,.6),inset -12px -12px 28px rgba(0,0,20,.7);
+  transform:translate(-50%,-50%) scale(0);opacity:0;
+  animation:planetIn 1.2s cubic-bezier(.34,1.56,.64,1) 2.4s forwards;
+}
+@keyframes planetIn{0%{transform:translate(-50%,-50%) scale(0);opacity:0}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.planet::after{content:'';position:absolute;inset:-10px;border-radius:50%;background:conic-gradient(from 0,transparent 30%,rgba(100,160,255,.12) 50%,transparent 70%);animation:spin 9s linear infinite}
+
+/* Nebula rings */
+.nb{position:absolute;top:50%;left:50%;border-radius:50%;transform:translate(-50%,-50%);opacity:0}
+.nb1{width:80vmax;height:80vmax;background:radial-gradient(circle,rgba(60,40,140,.22) 0%,transparent 60%);animation:nbIn 3s ease 1.5s forwards}
+.nb2{width:55vmax;height:55vmax;background:radial-gradient(circle,rgba(20,80,180,.18) 0%,transparent 60%);animation:nbIn 3s ease 1.8s forwards}
+.nb3{width:40vmax;height:40vmax;background:radial-gradient(circle,rgba(100,60,220,.14) 0%,transparent 60%);animation:nbIn 3s ease 2.1s forwards}
+@keyframes nbIn{to{opacity:1}}
+
+/* STELLO reveal */
+.reveal{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;pointer-events:none;
+}
+.rev-logo{
+  width:clamp(72px,13vw,120px);height:clamp(72px,13vw,120px);
+  border-radius:22px;object-fit:cover;
+  opacity:0;animation:revEl .8s ease 3.8s forwards;
+  box-shadow:0 0 40px rgba(100,160,255,.45);
+}
+.rev-logo-ring{
+  position:absolute;inset:-14px;border-radius:36px;
+  border:1.5px solid rgba(160,200,255,.5);
+  animation:ringPulse 1.5s ease-in-out infinite;
+}
+@keyframes ringPulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+.rev-logo-wrap{position:relative;opacity:0;animation:revEl .8s ease 3.8s forwards}
+
+.rev-name{
+  font-family:'Syne',sans-serif;font-size:clamp(46px,10vw,96px);
+  font-weight:800;letter-spacing:.16em;
+  background:linear-gradient(135deg,#fff 0%,#a0c8ff 50%,#6080ff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  opacity:0;animation:revEl .8s ease 4.1s forwards;
+}
+.rev-sub{
+  font-family:'DM Mono',monospace;font-size:clamp(10px,1.8vw,13px);
+  letter-spacing:.4em;color:rgba(160,200,255,.45);text-transform:uppercase;
+  opacity:0;animation:revEl .7s ease 4.4s forwards;
+}
+.rev-hint{
+  font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.25em;
+  color:rgba(100,160,255,.28);text-transform:uppercase;margin-top:20px;
+  opacity:0;animation:hintP 1.5s ease 5.5s infinite;
+}
+@keyframes revEl{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes hintP{0%,100%{opacity:.15}50%{opacity:.5}}
+
+#skip{position:fixed;bottom:20px;right:20px;z-index:99999;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;color:rgba(100,160,255,.28);background:none;border:1px solid rgba(100,160,255,.14);padding:6px 13px;cursor:pointer;text-transform:uppercase;opacity:0;animation:revEl 1s 1.5s ease forwards}
+#skip:hover{color:rgba(100,160,255,.6)}
+#app{position:fixed;inset:0;z-index:50;opacity:0;pointer-events:none;transition:opacity .9s ease}
+#app.visible{opacity:1;pointer-events:all}
+#app iframe{width:100%;height:100%;border:none;display:block}
+</style>
+</head>
+<body>
+<div id="cs">
+  <canvas id="c"></canvas>
+
+  <div class="nb nb1"></div>
+  <div class="nb nb2"></div>
+  <div class="nb nb3"></div>
+  <div class="wormhole"></div>
+  <div class="planet"></div>
+
+  <div class="reveal">
+    <div class="rev-logo-wrap">
+      <div class="rev-logo-ring"></div>
+      <img class="rev-logo" src="/static/logo.png" onerror="this.style.display='none'" alt="S"/>
+    </div>
+    <div class="rev-name">STELLO</div>
+    <div class="rev-sub">space infinity · beyond the edge</div>
+    <div class="rev-hint">— touch to enter —</div>
+  </div>
+</div>
+
+<button id="skip" onclick="enter()">skip</button>
+<div id="app"><iframe src="/main?theme=space" loading="eager"></iframe></div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, raf, entered = false, t = 0;
+
+function resize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize(); addEventListener('resize', resize);
+
+// 3-layer star parallax
+const layers = [
+  Array.from({length:200}, () => ({ x:(Math.random()-.5)*2200, y:(Math.random()-.5)*2200, z:Math.random()*1000+200, s:Math.random()*1.5+.3 })),
+  Array.from({length:80},  () => ({ x:(Math.random()-.5)*2000, y:(Math.random()-.5)*2000, z:Math.random()*500+100,  s:Math.random()*2.5+1 })),
+  Array.from({length:25},  () => ({ x:(Math.random()-.5)*1500, y:(Math.random()-.5)*1500, z:Math.random()*200+50,   s:Math.random()*4+2 })),
+];
+
+// Galaxy swirl
+const swirl = Array.from({length:120}, (_, i) => ({
+  angle: (i/120)*Math.PI*6, radius: (i/120)*.58,
+  speed: .0018+Math.random()*.003, size: Math.random()*2+.5,
+  hue: 200+Math.random()*60
+}));
+
+function drawStars(){
+  ctx.fillStyle = 'rgba(0,0,6,.18)';
+  ctx.fillRect(0, 0, W, H);
+
+  const speed = Math.min(t * .0005, .9);
+
+  layers.forEach((layer, li) => {
+    const para = 1 - li * .22;
+    layer.forEach(s => {
+      s.z -= speed * (.3 + li * .45);
+      if (s.z <= 1) { s.z = 800 + li*200; s.x = (Math.random()-.5)*2000; s.y = (Math.random()-.5)*2000; }
+      const px = (s.x/s.z)*380*para + W/2;
+      const py = (s.y/s.z)*380*para + H/2;
+      const r = Math.max(.2, s.s*(1-s.z/1000));
+      const alpha = Math.min(1,(1-s.z/1000)*.9);
+      if(px<-10||px>W+10||py<-10||py>H+10)return;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
+      ctx.fillStyle = `hsla(220,70%,90%,${alpha})`; ctx.fill();
+      if(speed>.35 && li===2){
+        const px2=(s.x/(s.z+speed*10))*380*para+W/2;
+        const py2=(s.y/(s.z+speed*10))*380*para+H/2;
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px2,py2);
+        ctx.strokeStyle=`hsla(220,80%,90%,${alpha*.35})`; ctx.lineWidth=r*.7; ctx.stroke();
+      }
+    });
+  });
+
+  // Galaxy swirl (phases in mid-cutscene)
+  const sa = Math.min(1, Math.max(0,(t-80)/100));
+  if(sa>0){
+    swirl.forEach(s => {
+      s.angle += s.speed;
+      const rx = Math.cos(s.angle)*s.radius*Math.min(W,H)*.42;
+      const ry = Math.sin(s.angle)*s.radius*Math.min(W,H)*.28;
+      ctx.beginPath(); ctx.arc(W/2+rx, H/2+ry, s.size*sa, 0, Math.PI*2);
+      ctx.fillStyle = `hsla(${s.hue},80%,75%,${sa*.5})`; ctx.fill();
+    });
+  }
+}
+
+function loop(){ t++; drawStars(); if(!entered) raf = requestAnimationFrame(loop); }
+raf = requestAnimationFrame(loop);
+
+let canEnter = false;
+setTimeout(() => canEnter = true, 2000);
+setTimeout(() => enter(), 9000);
+document.getElementById('cs').addEventListener('click', () => { if(canEnter) enter(); });
+document.addEventListener('keydown', e => { if(['Enter',' ','Escape'].includes(e.key) && canEnter) enter(); });
+
+function enter(){
+  if(entered)return; entered=true; cancelAnimationFrame(raf);
+  document.getElementById('skip').style.display='none';
+  document.getElementById('cs').classList.add('out');
+  document.getElementById('app').classList.add('visible');
+  setTimeout(()=>document.getElementById('cs').style.display='none',950);
+}
+</script>
+</body>
+</html>
