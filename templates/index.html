@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="ink">
 <head>
-  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>STELLO</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;400;700;900&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&family=Playfair+Display:wght@400;700;900&family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>STELLO</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;400;700;900&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&family=Playfair+Display:wght@400;700;900&family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
-<!-- Liquid animation layers -->
 <div id="particles"></div>
 <canvas id="bgCanvas"></canvas>
 <canvas id="liquidCanvas"></canvas>
-<div class="bg-overlay" id="bgOverlay"></div>
+<div class="bg-overlay"></div>
 <div class="theme-fx" id="themeFx"></div>
 
 <button id="sidebarToggle" class="sidebar-toggle"><span class="ti">⟨</span></button>
@@ -39,7 +38,7 @@
       <button class="new-chat-btn" onclick="newChat()"><span class="nc-plus">＋</span> New Chat</button>
 
       <!-- Personal OS strip -->
-      <div class="pos-strip" id="posStrip" onclick="openPOS()">
+      <div class="pos-strip" onclick="openPOS()" title="Open Personal OS">
         <span class="pos-icon">🧠</span>
         <div class="pos-info">
           <span class="pos-name" id="posName">Taufiq</span>
@@ -50,8 +49,8 @@
 
       <div class="model-row">
         <span class="ml-label">MODEL</span>
-        <button class="model-badge-btn" id="modelBadgeBtn" onclick="openSettings('models')">
-          <span id="modelBadge">DeepSeek V3</span><span class="mb-arrow">▾</span>
+        <button class="model-badge-btn" onclick="openSettings('models')">
+          <span id="modelBadge">DeepSeek V3</span><span class="mb-arr">▾</span>
         </button>
       </div>
     </div>
@@ -76,10 +75,9 @@
     <!-- HOME -->
     <div id="homeScreen" class="home-screen">
       <div class="home-inner">
-        <!-- Proactive nudge banner -->
         <div id="proactiveBanner" class="proactive-banner" style="display:none">
           <span class="pb-icon">💡</span>
-          <span class="pb-text" id="pbText">Loading your daily check-in...</span>
+          <span class="pb-text" id="pbText"></span>
           <button class="pb-close" onclick="closeBanner()">✕</button>
         </div>
 
@@ -90,11 +88,11 @@
         </div>
 
         <div class="home-input-row">
-          <button class="icon-btn voice-btn" onclick="toggleVoice()">
+          <button class="icon-btn voice-btn" onclick="toggleVoice()" title="Voice input">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </button>
-          <input id="homeInput" class="main-input" placeholder="ask anything, generate images, create docs..." autocomplete="off"/>
-          <label class="icon-btn img-btn" for="homeFile">
+          <input id="homeInput" class="main-input" placeholder="ask, generate images, type /commands..." autocomplete="off"/>
+          <label class="icon-btn img-btn" for="homeFile" title="Attach image">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <input type="file" id="homeFile" accept="image/*" style="display:none" onchange="handleImage(event,'home')"/>
           </label>
@@ -110,12 +108,12 @@
         </div>
 
         <div class="chips-row">
-          <button class="chip" onclick="fillSend('explain my ML thesis on drug dataset retrieval simply')">🧬 My thesis</button>
-          <button class="chip" onclick="fillSend('generate an image of a cyberpunk samurai in neon rain')">🎨 Generate image</button>
-          <button class="chip" onclick="fillSend('what happened in AI this week?')">🌐 AI news</button>
-          <button class="chip" onclick="fillSend('hype me up for a study grind')">🔥 Hype me</button>
+          <button class="chip" onclick="fillSend('explain my ML thesis on drug dataset retrieval and KG-RAG simply')">🧬 My thesis</button>
+          <button class="chip" onclick="fillSend('generate an image of a cyberpunk samurai in neon rain, 8k')">🎨 Gen image</button>
+          <button class="chip" onclick="fillSend('what are the biggest AI developments this week?')">🌐 AI news</button>
+          <button class="chip" onclick="fillSend('hype me up for a deep study grind')">🔥 Hype me</button>
           <button class="chip" onclick="fillSend('easter egg')">🥚 Easter egg</button>
-          <button class="chip" onclick="exportChat()">📄 Export chat</button>
+          <button class="chip" onclick="fillSend('/commands')">⚡ Commands</button>
         </div>
       </div>
     </div>
@@ -130,8 +128,9 @@
         <div class="topbar-right">
           <button class="topbar-btn" onclick="newChat()">＋</button>
           <button class="topbar-btn" onclick="openSettings()">⚙</button>
-          <button class="topbar-btn" onclick="exportChat()" title="Export">📄</button>
-          <button class="topbar-btn" onclick="openImageGen()" title="Image gen">🎨</button>
+          <button class="topbar-btn" onclick="openImageGen()" title="Generate image">🎨</button>
+          <button class="topbar-btn" onclick="toggleTTS()" id="ttsBtn" title="Voice readback">🔊</button>
+          <button class="topbar-btn" onclick="exportChat()">📄</button>
         </div>
       </div>
 
@@ -144,27 +143,45 @@
           <span class="preview-label">image attached</span>
         </div>
 
-        <!-- Mode menu -->
-        <div id="modeMenu" class="mode-menu" style="display:none">
-          <div class="mm-item" data-mode="chat" onclick="setMode('chat')">💬 <b>Chat</b> — standard STELLO</div>
-          <div class="mm-item" data-mode="deep_search" onclick="setMode('deep_search')">🔍 <b>Deep Search</b> — multi-source research</div>
-          <div class="mm-item" data-mode="story" onclick="setMode('story')">✨ <b>Story Weaver</b> — full creative mode</div>
-          <div class="mm-item" data-mode="science" onclick="setMode('science')">🔬 <b>Science</b> — rigorous analysis</div>
+        <!-- MODE MENU — always visible popup -->
+        <div id="modeMenu" class="mode-menu">
+          <div class="mm-header">Switch Mode</div>
+          <div class="mm-item" data-mode="chat" onclick="setMode('chat')">
+            <span class="mm-icon">💬</span><div class="mm-info"><b>Chat</b><span>Standard STELLO conversation</span></div>
+          </div>
+          <div class="mm-item" data-mode="deep_search" onclick="setMode('deep_search')">
+            <span class="mm-icon">🔍</span><div class="mm-info"><b>Deep Search</b><span>Multi-source research synthesis</span></div>
+          </div>
+          <div class="mm-item" data-mode="story" onclick="setMode('story')">
+            <span class="mm-icon">✨</span><div class="mm-info"><b>Story Weaver</b><span>Full creative & fantasy mode</span></div>
+          </div>
+          <div class="mm-item" data-mode="science" onclick="setMode('science')">
+            <span class="mm-icon">🔬</span><div class="mm-info"><b>Science</b><span>Rigorous scientific analysis</span></div>
+          </div>
+          <div class="mm-item" data-mode="career" onclick="setMode('career')">
+            <span class="mm-icon">💼</span><div class="mm-info"><b>Career Agent</b><span>AI career coach + ATS optimizer</span></div>
+          </div>
           <div class="mm-sep"></div>
-          <div class="mm-item" onclick="triggerEasterEgg()">🥚 Easter Egg</div>
-          <div class="mm-item" onclick="openImageGen()">🎨 Generate Image</div>
-          <div class="mm-item" onclick="exportChat()">📄 Export Chat</div>
+          <div class="mm-item" onclick="triggerEasterEgg()">
+            <span class="mm-icon">🥚</span><div class="mm-info"><b>Easter Egg</b><span>Theme secret</span></div>
+          </div>
+          <div class="mm-item" onclick="openImageGen()">
+            <span class="mm-icon">🎨</span><div class="mm-info"><b>Generate Image</b><span>AI image creation</span></div>
+          </div>
+          <div class="mm-item" onclick="exportChat()">
+            <span class="mm-icon">📄</span><div class="mm-info"><b>Export Chat</b><span>Save as TXT/MD/PDF</span></div>
+          </div>
         </div>
 
         <div class="input-row">
-          <button class="icon-btn mode-plus-btn" id="modePlusBtn" onclick="toggleModeMenu()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <button class="icon-btn mode-plus-btn" id="modePlusBtn" onclick="toggleModeMenu()" title="Switch mode / more options">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
-          <button class="icon-btn voice-btn" onclick="toggleVoice()">
+          <button class="icon-btn voice-btn" onclick="toggleVoice()" title="Voice input">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </button>
-          <input id="chatInput" class="main-input" placeholder="ask, generate images, Ctrl+V paste..." autocomplete="off"/>
-          <label class="icon-btn img-btn" for="chatFile">
+          <input id="chatInput" class="main-input" placeholder="speak your mind... (Ctrl+V to paste image)" autocomplete="off"/>
+          <label class="icon-btn img-btn" for="chatFile" title="Attach image">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <input type="file" id="chatFile" accept="image/*" style="display:none" onchange="handleImage(event,'chat')"/>
           </label>
@@ -172,9 +189,10 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
         </div>
-        <p class="input-hint">＋ for modes · Enter to send · Ctrl+V to paste image · say "generate [image]" to create</p>
+        <p class="input-hint">＋ modes · Enter send · Ctrl+V paste image · /commands for secrets · 🔊 voice readback</p>
       </div>
     </div>
+
   </main>
 </div>
 
@@ -186,20 +204,10 @@
       <button class="sp-close" onclick="closePOS()">✕</button>
     </div>
     <div class="pos-body">
-      <p class="sp-desc">STELLO tracks you. Give it context to be more powerful.</p>
-
-      <div class="pos-section">
-        <label class="pos-label">Your Name</label>
-        <input id="posNameInput" class="pos-input" placeholder="Taufiq" value="Taufiq"/>
-      </div>
-      <div class="pos-section">
-        <label class="pos-label">Current Project</label>
-        <input id="posProjectInput" class="pos-input" placeholder="ML thesis on drug dataset retrieval..."/>
-      </div>
-      <div class="pos-section">
-        <label class="pos-label">This Week's Goals</label>
-        <textarea id="posGoalsInput" class="pos-textarea" placeholder="1. Finish KG-RAG chapter&#10;2. Submit draft to supervisor&#10;3. Code evaluation pipeline"></textarea>
-      </div>
+      <p class="sp-desc">Give STELLO your context. Every message gets smarter with this.</p>
+      <div class="pos-section"><label class="pos-label">Your Name</label><input id="posNameInput" class="pos-input" placeholder="Taufiq"/></div>
+      <div class="pos-section"><label class="pos-label">Current Project</label><input id="posProjectInput" class="pos-input" placeholder="ML thesis on drug dataset retrieval..."/></div>
+      <div class="pos-section"><label class="pos-label">This Week's Goals</label><textarea id="posGoalsInput" class="pos-textarea" placeholder="1. Finish KG-RAG chapter&#10;2. Submit draft to supervisor&#10;3. Code evaluation pipeline"></textarea></div>
       <div class="pos-section">
         <label class="pos-label">How are you feeling today?</label>
         <div class="mood-row">
@@ -212,13 +220,16 @@
       <div class="pos-section">
         <label class="pos-label">Study Streak (days)</label>
         <div class="streak-row">
-          <button class="streak-btn" onclick="adjustStreak(-1)">−</button>
-          <span class="streak-display" id="streakDisplay">0</span>
-          <button class="streak-btn" onclick="adjustStreak(1)">＋</button>
+          <button class="streak-btn" onclick="adjStreak(-1)">−</button>
+          <span class="streak-disp" id="streakDisp">0</span>
+          <button class="streak-btn" onclick="adjStreak(1)">＋</button>
         </div>
       </div>
-
-      <button class="pos-save" onclick="savePOS()">Save & Activate</button>
+      <div class="pos-section">
+        <label class="pos-label">🧬 Memory Bank <small style="font-weight:300;letter-spacing:0">(STELLO remembers this forever)</small></label>
+        <textarea id="memoryInput" class="pos-textarea" style="height:80px" placeholder="Key facts STELLO should always remember...&#10;e.g. I prefer Python over R, my thesis supervisor is Dr. X, I have a deadline on June 15"></textarea>
+      </div>
+      <button class="pos-save" onclick="savePOS()">✓ Save & Activate</button>
       <button class="pos-nudge" onclick="getNudge()">💡 Get Proactive Nudge</button>
       <div id="nudgeResult" class="nudge-result" style="display:none"></div>
     </div>
@@ -240,7 +251,7 @@
     <div class="sp-content" id="tab-themes"><div class="theme-grid" id="themeGrid"></div></div>
     <div class="sp-content" id="tab-models" style="display:none"><div class="model-list" id="modelList"></div></div>
     <div class="sp-content" id="tab-personality" style="display:none">
-      <p class="sp-desc">Shape how STELLO talks. Added to every message.</p>
+      <p class="sp-desc">Shape how STELLO talks. Injected into every message.</p>
       <div class="preset-row">
         <button class="preset-btn" onclick="applyPreset('default')">🎯 Default</button>
         <button class="preset-btn" onclick="applyPreset('chill')">😎 Chill</button>
@@ -265,20 +276,18 @@
       <button class="sp-close" onclick="closeImageGen()">✕</button>
     </div>
     <div class="imggen-body">
-      <div class="imggen-source-row">
+      <div class="imggen-src-row">
         <button class="source-btn active" id="srcPoll" onclick="setImgSrc('pollinations')">✦ Pollinations (free)</button>
-        <button class="source-btn" id="srcDalle" onclick="setImgSrc('openrouter')">✦ DALL-E 3</button>
+        <button class="source-btn" id="srcDalle" onclick="setImgSrc('dalle')">✦ DALL·E 3</button>
       </div>
-      <textarea id="imgPrompt" class="pe-area" style="height:80px" placeholder="a cyberpunk samurai in neon rain, 8k..."></textarea>
+      <textarea id="imgPrompt" class="pe-area" style="height:80px" placeholder="a cyberpunk samurai in neon rain, hyperrealistic, 8k, cinematic lighting..."></textarea>
       <button class="pe-save" id="imgGenBtn" onclick="generateImage()">✨ Generate</button>
-      <div id="imgGenLoading" style="display:none" class="imggen-loading">
-        <div class="spinner"></div><p>Generating...</p>
-      </div>
+      <div id="imgGenLoading" style="display:none" class="imggen-loading"><div class="spinner"></div><p>Generating...</p></div>
       <div id="imgGenResult" style="display:none">
         <img id="imgGenOutput" class="imggen-output"/>
         <div class="imggen-actions">
           <button class="pe-save" onclick="sendImgToChat()">💬 Send to Chat</button>
-          <a id="imgGenDL" download="stello.jpg" class="pe-reset" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center">⬇ Download</a>
+          <a id="imgGenDL" download="stello-gen.jpg" class="pe-reset" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center">⬇ Download</a>
         </div>
       </div>
     </div>
@@ -294,18 +303,18 @@
     </div>
     <div class="imggen-body">
       <p class="sp-desc">Export this conversation as a document.</p>
-      <input id="exportTitle" class="pos-input" placeholder="Document title..." value="STELLO Conversation"/>
-      <div class="export-fmt-row">
-        <button class="source-btn active" id="fmtTxt" onclick="setExportFmt('txt')">📝 Plain Text</button>
+      <input id="exportTitle" class="pos-input" value="STELLO Conversation" placeholder="Document title..."/>
+      <div class="imggen-src-row" style="margin-top:8px">
+        <button class="source-btn active" id="fmtTxt" onclick="setExportFmt('txt')">📝 Text</button>
         <button class="source-btn" id="fmtMd" onclick="setExportFmt('md')">📋 Markdown</button>
-        <button class="source-btn" id="fmtPdf" onclick="setExportFmt('pdf')">📄 PDF (HTML)</button>
+        <button class="source-btn" id="fmtPdf" onclick="setExportFmt('pdf')">📄 PDF</button>
       </div>
-      <button class="pe-save" onclick="doExport()">Export</button>
+      <button class="pe-save" style="margin-top:8px" onclick="doExport()">Export</button>
     </div>
   </div>
 </div>
 
-<!-- Right-click ctx menu -->
+<!-- 3-dot context menu -->
 <div id="ctxMenu" class="ctx-menu">
   <button class="ctx-item" onclick="ctxRename()">✏️ Rename</button>
   <div class="ctx-sep"></div>
