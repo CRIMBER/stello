@@ -360,14 +360,14 @@ async function getNudge(){
   const el=document.getElementById('nudgeResult');if(!el)return;
   el.style.display='block';el.textContent='Getting your nudge...';
   try{
-    const r=await fetch('http://127.0.0.1:5000/proactive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:posContext})});
+    const r=await fetch('/proactive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:posContext})});
     const d=await r.json();el.textContent=d.message||'Keep pushing! 💪';
   }catch(e){el.textContent="Can't reach server — but keep pushing! 💪";}
 }
 async function loadProactiveBanner(){
   if(!posContext.project&&!posContext.goals)return;
   try{
-    const r=await fetch('http://127.0.0.1:5000/proactive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:posContext})});
+    const r=await fetch('/proactive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:posContext})});
     const d=await r.json();
     const banner=document.getElementById('proactiveBanner');
     const text=document.getElementById('pbText');
@@ -488,7 +488,7 @@ async function generateImage(promptOverride){
     const btn=document.getElementById('imgGenBtn');if(btn)btn.disabled=true;
   }
   try{
-    const res=await fetch('http://127.0.0.1:5000/generate-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,source:imgSrc})});
+    const res=await fetch('/generate-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,source:imgSrc})});
     const data=await res.json();
     if(data.url){
       generatedImageUrl=data.url;
@@ -551,7 +551,7 @@ async function doExport(){
   const title=document.getElementById('exportTitle')?.value||'STELLO Chat';
   const content=chatHistory.map(m=>(m.role==='user'?'YOU':'STELLO')+': '+m.content).join('\n\n---\n\n');
   try{
-    const r=await fetch('http://127.0.0.1:5000/export-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content,title,format:exportFmt})});
+    const r=await fetch('/export-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content,title,format:exportFmt})});
     const blob=await r.blob();const ext={txt:'txt',md:'md',pdf:'html'}[exportFmt]||'txt';
     const url=URL.createObjectURL(blob);const a=document.createElement('a');
     a.href=url;a.download=title.replace(/\s+/g,'_')+'.'+ext;a.click();
@@ -630,7 +630,7 @@ async function send(){
   try{
     const body={message:text,history:chatHistory.slice(0,-1),theme:currentTheme,model:currentModel,mode:currentMode,personality:customPersonality,context:posContext};
     if(img){body.image_base64=img.base64;body.image_mime=img.mimeType;}
-    const res=await fetch('http://127.0.0.1:5000/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await res.json();loadEl.remove();
     const reply=data.reply||'⚠️ No response';
     addMsg(reply,'bot',data.searched||false,null,null,data.is_easter||false);
