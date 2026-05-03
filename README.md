@@ -12,11 +12,37 @@ It combines AI responses, customizable themes, and productivity features into a 
 *  Context-aware AI responses
 *  20+ dynamic UI themes
 *  Personality-driven interaction
+*  Hidden theme-based easter eggs
+*  Adaptive interaction style
+*  Designed to feel like a **personal AI system, not a generic chatbot**
 *  Voice input support
 *  Image generation
 *  Streak-based engagement system
 *  Chat history and export
 *  Built with a focus on real-world usability
+*  
+## ⚡ Features
+
+* 🧠 Context-aware AI responses
+* 🎨 20+ dynamic UI themes
+* 🎭 Personality-driven interaction
+* 🎙️ Voice input support
+* 🖼️ Image generation
+* 🔥 Streak-based engagement system
+* 🗂️ Chat history with export support
+
+
+## Intelligent Modes (Multi-Agent System)
+
+STELLO operates through specialized modes designed for different tasks:
+
+*  **Chat Mode** — standard intelligent conversation
+*  **Deep Search** — multi-source analysis & research synthesis
+*  **Story Weaver** — creative storytelling & imagination engine
+*  **Science Mode** — structured, research-focused responses
+*  **Career Agent** — resume analysis, ATS optimization & career strategy
+*  **Image Mode** — AI image generation
+*  **Easter Egg Mode** — hidden interactions across themes
 
 ## Tech Stack
 
