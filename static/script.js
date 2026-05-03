@@ -614,11 +614,116 @@ function toggleSidebar(){
 }
 
 // ── SEND ──
+// ── /COMMANDS SYSTEM (PATCH 2) ──────────────────────────────
+function showSystemMsg(text){
+  if(!chatStarted)openChat();
+  const area=document.getElementById('chat');if(!area)return;
+  const msg=document.createElement('div');msg.className='msg bot';
+  const inner=document.createElement('div');inner.className='msg-inner';
+  const label=document.createElement('span');label.className='msg-label';
+  label.innerHTML='<span style="color:var(--ac2)">⚡ SYSTEM</span>';
+  const bubble=document.createElement('div');bubble.className='bubble';
+  bubble.style.cssText='background:var(--sur);border-color:var(--bdra)';
+  bubble.innerHTML=marked.parse(text);
+  inner.appendChild(label);inner.appendChild(bubble);msg.appendChild(inner);
+  area.appendChild(msg);area.scrollTop=area.scrollHeight;
+}
+
+const COMMANDS={
+  '/help':()=>showSystemMsg(
+    '## ⚡ STELLO Commands\n' +
+    '`/help` — show all commands\n\n' +
+    '`/clear` — clear current chat\n\n' +
+    '`/streak+` — add 1 study day to your streak\n\n' +
+    '`/streak-` — remove 1 day from streak\n\n' +
+    '`/theme [name]` — switch theme (e.g. `/theme oni`)\n\n' +
+    '`/mode [name]` — switch mode (e.g. `/mode career`)\n\n' +
+    '`/stats` — show your session stats\n\n' +
+    '`/reset` — reset all settings to default\n\n' +
+    '*Type any command and hit Enter.*'
+  ),
+  '/clear':()=>{
+    const chat=document.getElementById('chat');
+    if(chat)chat.innerHTML='';
+    chatHistory=[];
+    showSystemMsg('🗑️ Chat cleared.');
+  },
+  '/streak+':()=>{
+    posContext.streak=Math.max(0,(posContext.streak||0)+1);
+    localStorage.setItem('stello_pos',JSON.stringify(posContext));
+    updatePOSStrip();
+    showSystemMsg('🔥 Streak: **'+posContext.streak+' days!** Keep grinding bro!');
+  },
+  '/streak-':()=>{
+    posContext.streak=Math.max(0,(posContext.streak||0)-1);
+    localStorage.setItem('stello_pos',JSON.stringify(posContext));
+    updatePOSStrip();
+    showSystemMsg('📉 Streak: **'+posContext.streak+' days.** Get back on it!');
+  },
+  '/stats':()=>{
+    const u=chatHistory.filter(m=>m.role==='user').length;
+    const a=chatHistory.filter(m=>m.role==='assistant').length;
+    showSystemMsg(
+      '## 📊 Session Stats\n' +
+      '**Your messages:** '+u+'\n\n' +
+      '**STELLO replies:** '+a+'\n\n' +
+      '**Model:** '+( MODELS[currentModel]?.name||currentModel)+'\n\n' +
+      '**Theme:** '+(THEMES[currentTheme]?.label||currentTheme)+'\n\n' +
+      '**Mode:** '+(MODES[currentMode]?.icon||'')+' '+(MODES[currentMode]?.name||currentMode)+'\n\n' +
+      '**Streak:** 🔥 '+(posContext.streak||0)+' days\n\n' +
+      '**Mood:** '+(posContext.mood||'😐 neutral')
+    );
+  },
+  '/reset':()=>{
+    ['stello_theme','stello_model','stello_personality','stello_pos','stello_sessions','stello_memory']
+      .forEach(k=>localStorage.removeItem(k));
+    showSystemMsg('♻️ All settings reset. **Refresh the page** to apply.');
+  },
+};
+
+function handleCommand(text){
+  const parts=text.trim().split(' ');
+  const cmd=parts[0].toLowerCase();
+  const arg=parts.slice(1).join(' ').toLowerCase().trim();
+
+  // /theme [name]
+  if(cmd==='/theme'){
+    if(!arg){showSystemMsg('Usage: `/theme [name]`\n\nAvailable: '+Object.keys(THEMES).join(', '));return true;}
+    const found=Object.keys(THEMES).find(k=>k===arg||k.includes(arg)||THEMES[k].label.toLowerCase().includes(arg));
+    if(found){setTheme(found);showSystemMsg('🎨 Theme switched to **'+THEMES[found].label+'**');}
+    else showSystemMsg('❌ Theme "'+arg+'" not found.\n\nTry: `ink`, `oni`, `space`, `sith`, `breaking-bad`...');
+    return true;
+  }
+
+  // /mode [name]
+  if(cmd==='/mode'){
+    if(!arg){showSystemMsg('Usage: `/mode [name]`\n\nAvailable: '+Object.keys(MODES).join(', '));return true;}
+    const found=Object.keys(MODES).find(k=>k===arg||k.includes(arg)||MODES[k].name.toLowerCase().includes(arg));
+    if(found){setMode(found);showSystemMsg('✅ Mode switched to **'+MODES[found].icon+' '+MODES[found].name+'**');}
+    else showSystemMsg('❌ Mode "'+arg+'" not found.\n\nTry: `chat`, `deep_search`, `story`, `science`, `career`');
+    return true;
+  }
+
+  // static commands
+  if(COMMANDS[cmd]){COMMANDS[cmd]();return true;}
+  return false;
+}
+// ── END /COMMANDS ────────────────────────────────────────────
+
 async function send(){
   if(isLoading)return;stopListening();closeModeMenu();
   const hi=document.getElementById('homeInput'),ci=document.getElementById('chatInput');
   const text=(hi?.value||ci?.value||'').trim();
   if(!text&&!pendingImage)return;
+
+  // Handle /commands — don't send to AI
+  if(text.startsWith('/')){
+    if(hi)hi.value='';if(ci)ci.value='';
+    if(!chatStarted)openChat();
+    if(handleCommand(text))return;
+    // unknown command — fall through to AI
+  }
+
   playSound('send');isLoading=true;setDisabled(true);
   if(hi)hi.value='';if(ci)ci.value='';
   if(!chatStarted)openChat();
