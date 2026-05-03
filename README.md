@@ -20,18 +20,7 @@ It combines AI responses, customizable themes, and productivity features into a 
 *  Streak-based engagement system
 *  Chat history and export
 *  Built with a focus on real-world usability
-*  
-## ⚡ Features
-
-* 🧠 Context-aware AI responses
-* 🎨 20+ dynamic UI themes
-* 🎭 Personality-driven interaction
-* 🎙️ Voice input support
-* 🖼️ Image generation
-* 🔥 Streak-based engagement system
-* 🗂️ Chat history with export support
-
-
+  
 ## Intelligent Modes (Multi-Agent System)
 
 STELLO operates through specialized modes designed for different tasks:
