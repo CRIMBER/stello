@@ -14,6 +14,7 @@ let currentTheme='ink', currentModel='deepseek/deepseek-chat-v3-0324', currentMo
 let pendingImage=null, recognition=null, isListening=false, customPersonality='';
 let generatedImageUrl=null, imgSrc='pollinations', exportFmt='txt';
 let modeMenuOpen=false;
+let memoryBank=""; // PATCH 3
 let posContext={name:'Taufiq',project:'ML thesis on drug dataset retrieval',goals:'',mood:'😐 neutral',streak:0};
 let liquidRaf=null;
 
@@ -206,7 +207,8 @@ window.onload=()=>{
   const saved=localStorage.getItem('stello_theme')||urlTheme||'ink';
   currentModel=localStorage.getItem('stello_model')||'deepseek/deepseek-chat-v3-0324';
   customPersonality=localStorage.getItem('stello_personality')||'';
-  const sp=localStorage.getItem('stello_pos');
+  const sp=localStorage.getItem("stello_pos");
+  memoryBank=localStorage.getItem("stello_memory")||"";
   if(sp)try{posContext=JSON.parse(sp);}catch(e){}
   updatePOSStrip();
   setTheme(saved,false);setModel(currentModel,false);
@@ -640,6 +642,9 @@ const COMMANDS={
     '`/mode [name]` — switch mode (e.g. `/mode career`)\n\n' +
     '`/stats` — show your session stats\n\n' +
     '`/reset` — reset all settings to default\n\n' +
+    '`/memory` — show your memory bank\n\n' +
+    '`/remember [fact]` — quickly add a fact (e.g. `/remember my deadline is June 15`)\n\n' +
+    '`/forget` — clear memory bank\n\n' +
     '*Type any command and hit Enter.*'
   ),
   '/clear':()=>{
@@ -733,7 +738,7 @@ async function send(){
   chatHistory.push({role:'user',content:text||'[image attached]'});
   const loadEl=addTyping();
   try{
-    const body={message:text,history:chatHistory.slice(0,-1),theme:currentTheme,model:currentModel,mode:currentMode,personality:customPersonality,context:posContext};
+    const body={message:text,history:chatHistory.slice(0,-1),theme:currentTheme,model:currentModel,mode:currentMode,personality:customPersonality,context:posContext,memory:memoryBank};
     if(img){body.image_base64=img.base64;body.image_mime=img.mimeType;}
     const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await res.json();loadEl.remove();
@@ -845,3 +850,69 @@ function loadSession(id){
   document.getElementById('homeScreen').style.display='none';document.getElementById('chatScreen').style.display='flex';
   renderHistory();if(chat)chat.scrollTop=chat.scrollHeight;document.getElementById('chatInput')?.focus();
 }
+
+// ── PATCH 3: MEMORY BANK ─────────────────────────────────────
+// Save memory from Personal OS panel
+const _origSavePOS = savePOS;
+savePOS = function(){
+  posContext.name=document.getElementById('posNameInput')?.value||'Taufiq';
+  posContext.project=document.getElementById('posProjectInput')?.value||'';
+  posContext.goals=document.getElementById('posGoalsInput')?.value||'';
+  localStorage.setItem('stello_pos',JSON.stringify(posContext));
+  // Save memory bank if the field exists
+  const mi=document.getElementById('memoryInput');
+  if(mi){
+    memoryBank=mi.value.trim();
+    localStorage.setItem('stello_memory',memoryBank);
+  }
+  updatePOSStrip();closePOS();
+  showSystemMsg('✅ Personal OS saved! Memory bank active — STELLO will remember this in every message.');
+};
+
+// Load memory into Personal OS panel when it opens
+const _origOpenPOS = openPOS;
+openPOS = function(){
+  _origOpenPOS();
+  const mi=document.getElementById('memoryInput');
+  if(mi) mi.value=memoryBank||'';
+};
+
+// /memory command — show current memory bank
+COMMANDS['/memory'] = ()=>{
+  if(!memoryBank.trim()){
+    showSystemMsg('🧬 **Memory Bank is empty.**\n\nOpen **Personal OS** (🧠 in sidebar) and add facts you want STELLO to always remember.\n\nExamples:\n- My thesis supervisor is Dr. Ahmed\n- I prefer Python over R\n- My deadline is June 15\n- I am targeting jobs in Singapore');
+  } else {
+    showSystemMsg('🧬 **Memory Bank — active facts:**\n\n```\n'+memoryBank+'\n```\n\n*These are injected into every message STELLO receives.*');
+  }
+};
+
+// /remember [fact] command — quickly add a fact to memory
+COMMANDS['/remember'] = function(){
+  // this won't be called directly, handled in handleCommand below
+};
+
+// Override handleCommand to support /remember [fact]
+const _origHandleCommand = handleCommand;
+handleCommand = function(text){
+  const parts=text.trim().split(' ');
+  const cmd=parts[0].toLowerCase();
+  const arg=parts.slice(1).join(' ').trim();
+
+  if(cmd==='/remember'){
+    if(!arg){showSystemMsg('Usage: `/remember [fact]`\n\nExample: `/remember My thesis deadline is June 15`');return true;}
+    memoryBank=memoryBank?(memoryBank+'\n'+arg):arg;
+    localStorage.setItem('stello_memory',memoryBank);
+    showSystemMsg('🧬 **Remembered:** "'+arg+'"\n\nSTELLO will know this in every future message. Type `/memory` to see everything stored.');
+    return true;
+  }
+
+  if(cmd==='/forget'){
+    memoryBank='';
+    localStorage.removeItem('stello_memory');
+    showSystemMsg('🗑️ Memory Bank cleared. STELLO starts fresh.');
+    return true;
+  }
+
+  return _origHandleCommand(text);
+};
+// ── END PATCH 3 ───────────────────────────────────────────────
