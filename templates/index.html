@@ -328,6 +328,59 @@
   </div>
 </div>
 
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+const firebaseConfig = {
+  apiKey:"AIzaSyCGtUJ6H2YqqSsNG5HJ6jc9cxwzrDqj4Dg",
+  authDomain:"stello-f3108.firebaseapp.com",
+  projectId:"stello-f3108",
+  storageBucket:"stello-f3108.firebasestorage.app",
+  messagingSenderId:"220682811608",
+  appId:"1:220682811608:web:2075694e34b0ff380cffad"
+};
+const ADMIN_EMAIL = "foundationspidey@gmail.com";
+const firebase = initializeApp(firebaseConfig);
+const auth = getAuth(firebase);
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    window.location.href = '/';
+    return;
+  }
+  // Inject user info into STELLO
+  const stored = localStorage.getItem('stello_user');
+  if (!stored) {
+    localStorage.setItem('stello_user', JSON.stringify({
+      uid: user.uid,
+      name: user.displayName || user.email.split('@')[0],
+      email: user.email,
+      photo: user.photoURL || '',
+      isAdmin: user.email === ADMIN_EMAIL,
+    }));
+  }
+  // Update Personal OS name from Firebase if not set
+  const pos = localStorage.getItem('stello_pos');
+  if (!pos) {
+    const name = user.displayName || user.email.split('@')[0];
+    localStorage.setItem('stello_pos', JSON.stringify({
+      name: name, project: '', goals: '', mood: '😐 neutral', streak: 0
+    }));
+  }
+  // Show admin badge if boss
+  if (user.email === ADMIN_EMAIL) {
+    document.addEventListener('DOMContentLoaded', () => {
+      const sub = document.getElementById('brandSub');
+      if (sub) sub.textContent = '👑 BOSS MODE';
+    });
+  }
+});
+// Global sign out function
+window.signOut = async function() {
+  await auth.signOut();
+  localStorage.removeItem('stello_user');
+  window.location.href = '/';
+};
+</script>
 <script src="/static/script.js"></script>
 </body>
 </html>
