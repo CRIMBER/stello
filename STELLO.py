@@ -2,12 +2,13 @@ from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
 import requests, re, os, io
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-OR_KEY  = "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"
-TAV_KEY = "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"
+OR_KEY = os.getenv("OR_KEY")
+TAV_KEY = os.getenv("TAV_KEY")
 
 ALLOWED = {
     "deepseek/deepseek-chat-v3-0324", "deepseek/deepseek-r1",
