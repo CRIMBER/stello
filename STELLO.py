@@ -2,15 +2,13 @@ from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
 import requests, re, os, io
 from datetime import datetime
-from dotenv import load_dotenv
-
-load_dotenv()
+import load_dotenv load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-OR_KEY  = os.getenv("OR_KEY")
-TAV_KEY = os.getenv("TAV_KEY")
+ OR_KEY  = os.getenv("OR_KEY") 
+ TAV_KEY = os.getenv("TAV_KEY")
 
 ALLOWED = {
     "deepseek/deepseek-chat-v3-0324", "deepseek/deepseek-r1",
@@ -245,10 +243,14 @@ def ddg(query):
 
 @app.route("/")
 def root():
+    # Root now serves the login page
+    return render_template("login.html")
+
+@app.route("/cutscene")
+def cutscene_route():
     theme = str(request.args.get("theme") or "ink")
     cutscene = CUTSCENE_MAP.get(theme, "cutscene_ink.html")
     return render_template(cutscene)
-
 
 @app.route("/main")
 def main():
