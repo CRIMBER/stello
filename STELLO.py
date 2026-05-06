@@ -2,13 +2,15 @@ from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
 import requests, re, os, io
 from datetime import datetime
-import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-OR_KEY = os.getenv("OR_KEY")
-TAV_KEY = os.getenv("TAV_KEY")
+OR_KEY      = os.getenv("OR_KEY")
+TAV_KEY     = os.getenv("TAV_KEY")
 
 ALLOWED = {
     "deepseek/deepseek-chat-v3-0324", "deepseek/deepseek-r1",
@@ -74,76 +76,38 @@ PERSONA = {
     "mythical":"Ancient powers stir. Weight of legends.",
 }
 
-# ── SYSTEM PROMPTS ──────────────────────────────────────────────
-
-CHAT_SYS = """You are STELLO — Taufiq's personal AI and most trusted digital weapon.
+CHAT_SYS = """You are STELLO — a personal AI assistant.
 
 PERSONALITY:
 - Talk like a brilliant close friend. Casual, real, warm, genuine.
 - Slang naturally: bro, fr, lowkey, ngl — never forced.
 - Light humor and friendly roasts when the moment's right.
 - Direct and accurate — cut the fluff, get to the point fast, then go deep.
-- Motivating — gas him up when grinding. Honest about bad ideas.
-
-TAUFIQ'S CONTEXT:
-- ML student: thesis on drug dataset retrieval, KG-RAG, GraphRAG, multi-agent LLM systems
-- Technical — don't dumb things down
-- Built STELLO from scratch — this hustle gets respect
-- Goal: AI/ML job abroad after graduating
+- Motivating — gas the user up when grinding. Honest about bad ideas.
 
 CODING: Production quality. Spot edge cases. Explain reasoning. Modern patterns.
 
-FORMAT: Full markdown. Code blocks with language tags. 
+FORMAT: Full markdown. Code blocks with language tags.
 NEVER start with "Certainly!" "Of course!" "Great question!"
 
-IMAGE GENERATION: When user asks to generate/draw/create/make an image, respond EXACTLY like:
+IMAGE GENERATION: When user asks to generate/draw/create/make an image:
 [GENERATE_IMAGE: detailed descriptive prompt here]
 Then on the next line, add your comment."""
 
-CAREER_SYS = """You are STELLO in CAREER AGENT MODE — an advanced AI career coach, ATS optimizer, and personal branding expert for Taufiq.
-
+CAREER_SYS = """You are STELLO in CAREER AGENT MODE — an advanced AI career coach and ATS optimizer.
 Think like: recruiter + career coach + ATS system combined.
 Be: direct, honest, practical, specific. No generic advice. High-impact only.
 
-TAUFIQ'S TARGET:
-- Role: AI/ML Engineer / Research Engineer / ML Scientist
-- Market: International — Europe, US, UAE, Singapore
-- Background: ML student, thesis on KG-RAG/GraphRAG/drug dataset retrieval, built STELLO from scratch
-- Needs: ATS-ready resume, strong GitHub, LinkedIn optimization, job readiness
+If no data provided → ask for resume text, LinkedIn About, or job description.
+If data provided → run full analysis immediately.
 
-WORKFLOW:
-1. If no data provided → ask: "Share your resume text, LinkedIn About section, or job description you're targeting — I'll run a full analysis."
-2. If data provided → run full analysis immediately
-
-OUTPUT FORMAT (always structured):
+OUTPUT FORMAT:
 ## 🔍 Analysis
-**Strengths:** [specific strengths]
-**Weaknesses:** [specific gaps]
-**Missing Elements:** [what's needed]
-
 ## ⚡ Optimizations
-**LinkedIn Headline:** [rewritten headline]
-**LinkedIn About:** [rewritten about section]
-**Resume Bullets:** [improved bullet points with metrics]
-**ATS Keywords:** [missing keywords for target roles]
-
 ## 🚀 Action Plan
-**Today:** [1-2 immediate actions]
-**This Week:** [3-5 actions for next 7 days]
-**This Month:** [longer-term moves]
+## 📊 Scores (Profile/Resume/Job Readiness out of 100)
 
-## 📊 Scores
-| Metric | Score | Why |
-|--------|-------|-----|
-| Profile Strength | X/100 | reason |
-| Resume Strength | X/100 | reason |
-| Job Readiness | X/100 | reason |
-
-CONSTRAINTS:
-- NEVER fabricate experience or data
-- Ask for clarification if data is insufficient
-- Prioritize accuracy over creativity
-- Every recommendation must be specific and actionable"""
+NEVER fabricate experience. Ask for clarification if data is insufficient."""
 
 DEEP_SEARCH_SYS = """You are STELLO in DEEP SEARCH MODE.
 Format: ## Overview → ## Key Findings → ## Deep Dive → ## Bottom Line
@@ -165,7 +129,7 @@ MODES = {
     "career":      CAREER_SYS,
 }
 
-PROACTIVE_SYS = """You are STELLO's proactive check-in for Taufiq — ML student targeting AI/ML jobs abroad.
+PROACTIVE_SYS = """You are STELLO's proactive check-in system.
 Generate a warm, direct, motivating check-in based on context. Max 2 sentences. Personal and specific."""
 
 SEARCH_GATE = """Needs live web search?
@@ -179,14 +143,10 @@ def needs_search(msg):
         r = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers={"Authorization": "Bearer " + OR_KEY, "Content-Type": "application/json"},
-            json={
-                "model": "openai/gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": SEARCH_GATE},
-                    {"role": "user",   "content": msg[:300]}
-                ],
-                "max_tokens": 3, "temperature": 0
-            },
+            json={"model":"openai/gpt-4o-mini","messages":[
+                {"role":"system","content":SEARCH_GATE},
+                {"role":"user","content":msg[:300]}
+            ],"max_tokens":3,"temperature":0},
             timeout=4
         )
         if r.status_code == 200:
@@ -198,71 +158,66 @@ def needs_search(msg):
 
 def tavily(query):
     try:
-        r = requests.post(
-            "https://api.tavily.com/search",
-            headers={"Content-Type": "application/json"},
-            json={"api_key": TAV_KEY, "query": query, "search_depth": "basic",
-                  "include_answer": True, "max_results": 5},
-            timeout=9
-        )
-        if r.status_code != 200:
-            return ddg(query)
+        r = requests.post("https://api.tavily.com/search",
+            headers={"Content-Type":"application/json"},
+            json={"api_key":TAV_KEY,"query":query,"search_depth":"basic","include_answer":True,"max_results":5},
+            timeout=9)
+        if r.status_code != 200: return ddg(query)
         d = r.json()
         parts = []
-        if d.get("answer"):
-            parts.append("**Answer:** " + str(d["answer"]))
-        for res in d.get("results", [])[:4]:
-            s = str(res.get("content", ""))[:220].strip()
-            if s:
-                parts.append("- **" + str(res.get("title", "")) + "**: " + s)
+        if d.get("answer"): parts.append("**Answer:** " + str(d["answer"]))
+        for res in d.get("results",[])[:4]:
+            s = str(res.get("content",""))[:220].strip()
+            if s: parts.append("- **" + str(res.get("title","")) + "**: " + s)
         return "\n\n".join(parts) if parts else "No results."
-    except Exception:
-        return ddg(query)
+    except Exception: return ddg(query)
 
 
 def ddg(query):
     try:
-        r = requests.get(
-            "https://api.duckduckgo.com/",
-            params={"q": query, "format": "json", "no_html": "1", "skip_disambig": "1"},
-            timeout=5
-        )
+        r = requests.get("https://api.duckduckgo.com/",
+            params={"q":query,"format":"json","no_html":"1","skip_disambig":"1"},timeout=5)
         d = r.json()
         parts = []
-        if d.get("AbstractText"):
-            parts.append(str(d["AbstractText"]))
-        for t in d.get("RelatedTopics", [])[:3]:
-            if isinstance(t, dict) and t.get("Text"):
-                parts.append("- " + str(t["Text"]))
+        if d.get("AbstractText"): parts.append(str(d["AbstractText"]))
+        for t in d.get("RelatedTopics",[])[:3]:
+            if isinstance(t,dict) and t.get("Text"): parts.append("- " + str(t["Text"]))
         return "\n".join(parts) if parts else "Search unavailable."
-    except Exception:
-        return "Search unavailable."
+    except Exception: return "Search unavailable."
 
 
-# ── ROUTES ──────────────────────────────────────────────────────
+
+
+# ── ROUTES ────────────────────────────────────────────────────
 
 @app.route("/")
 def root():
-    # Root now serves the login page
-    return render_template("login.html")
+    # Step 1: Show cutscene (cutscene → /login → /main)
+    return render_template("cutscene_ink.html")
 
-@app.route("/cutscene")
-def cutscene_route():
-    theme = str(request.args.get("theme") or "ink")
-    cutscene = CUTSCENE_MAP.get(theme, "cutscene_ink.html")
-    return render_template(cutscene)
+@app.route("/login")
+def login():
+    # Step 2: Login page
+    return render_template("login.html")
 
 @app.route("/main")
 def main():
+    # Step 3: Main app
     return render_template("index.html")
+
+@app.route("/cutscene")
+def cutscene():
+    # Theme-specific cutscenes (from settings theme switcher)
+    theme = str(request.args.get("theme") or "ink")
+    return render_template(CUTSCENE_MAP.get(theme, "cutscene_ink.html"))
+
+
 
 
 @app.route("/chat", methods=["POST"])
 def chat():
     try:
-        # ── safe parsing — no string + bool ever ──────────────
-        data = request.get_json(force=True) or {}
-
+        data        = request.get_json(force=True) or {}
         user_msg    = str(data.get("message") or "")
         history     = list(data.get("history") or [])
         img_b64     = data.get("image_base64") or None
@@ -278,136 +233,79 @@ def chat():
         if img_b64 and model not in VISION:
             model = "openai/gpt-4o"
 
-        # ── Easter egg ────────────────────────────────────────
+        # Easter egg
         msg_lower = user_msg.lower()
-        if any(k in msg_lower for k in ["easter egg", "secret", "hidden trick", "surprise me"]):
-            egg = EGGS.get(theme, "🥚 No easter egg for this theme yet — keep exploring!")
-            return jsonify({
-                "reply": egg,
-                "searched": False,
-                "model": model,
-                "img_gen_prompt": None,
-                "is_easter": True
-            })
+        if any(k in msg_lower for k in ["easter egg","secret","hidden trick","surprise me"]):
+            egg = EGGS.get(theme,"🥚 No easter egg for this theme yet — keep exploring!")
+            return jsonify({"reply":egg,"searched":False,"model":model,"img_gen_prompt":None,"is_easter":True})
 
-        # ── Web search (skip for story / career) ─────────────
+        # Web search
         searched = False
         search_ctx = ""
-        if user_msg and mode not in ("story", "career") and needs_search(user_msg):
+        if user_msg and mode not in ("story","career") and needs_search(user_msg):
             results = tavily(user_msg)
-            search_ctx = (
-                "\n\n[WEB SEARCH: '" + user_msg + "']\n"
-                + results
-                + "\n[END] — use naturally, don't dump raw."
-            )
+            search_ctx = "\n\n[WEB SEARCH: '" + user_msg + "']\n" + results + "\n[END] — use naturally."
             searched = True
 
-        # ── Build system prompt ───────────────────────────────
+        # Build system
         base   = MODES.get(mode, MODES["chat"])
-        energy = PERSONA.get(theme, "")
-
+        energy = PERSONA.get(theme,"")
         system = base
-        if energy:
-            system = system + "\n\nTHEME ENERGY: " + energy
-        if personality.strip():
-            system = system + "\n\nCUSTOM PERSONALITY: " + personality.strip()
+        if energy:       system = system + "\n\nTHEME ENERGY: " + energy
+        if personality.strip(): system = system + "\n\nCUSTOM PERSONALITY: " + personality.strip()
 
-        # Personal context block
         ctx_lines = []
         if context.get("name"):    ctx_lines.append("Name: "    + str(context["name"]))
         if context.get("project"): ctx_lines.append("Project: " + str(context["project"]))
         if context.get("goals"):   ctx_lines.append("Goals: "   + str(context["goals"]))
         if context.get("mood"):    ctx_lines.append("Mood: "    + str(context["mood"]))
         if context.get("streak"):  ctx_lines.append("Streak: "  + str(context["streak"]) + " days")
-        if ctx_lines:
-            system = system + "\n\nPERSONAL CONTEXT:\n" + "\n".join(ctx_lines)
+        if ctx_lines: system = system + "\n\nPERSONAL CONTEXT:\n" + "\n".join(ctx_lines)
+        if memory_str.strip(): system = system + "\n\nSTELLO MEMORY BANK:\n" + memory_str.strip()
+        if search_ctx: system = system + search_ctx
 
-        # Memory bank
-        if memory_str.strip():
-            system = system + "\n\nSTELLO MEMORY BANK:\n" + memory_str.strip()
-
-        if search_ctx:
-            system = system + search_ctx
-
-        # ── Build messages ────────────────────────────────────
-        messages = [{"role": "system", "content": system}]
+        messages = [{"role":"system","content":system}]
         for h in history[-16:]:
-            if isinstance(h, dict) and h.get("role") and h.get("content"):
-                messages.append({
-                    "role":    str(h["role"]),
-                    "content": str(h["content"])
-                })
+            if isinstance(h,dict) and h.get("role") and h.get("content"):
+                messages.append({"role":str(h["role"]),"content":str(h["content"])})
 
         if img_b64:
-            messages.append({"role": "user", "content": [
-                {"type": "image_url",
-                 "image_url": {"url": "data:" + img_mime + ";base64," + img_b64}},
-                {"type": "text",
-                 "text": user_msg or "What's in this image?"}
+            messages.append({"role":"user","content":[
+                {"type":"image_url","image_url":{"url":"data:"+img_mime+";base64,"+img_b64}},
+                {"type":"text","text":user_msg or "What's in this image?"}
             ]})
         else:
-            messages.append({"role": "user", "content": user_msg})
+            messages.append({"role":"user","content":user_msg})
 
-        # ── Call OpenRouter ───────────────────────────────────
         resp = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": "Bearer " + OR_KEY,
-                "Content-Type":  "application/json",
-                "HTTP-Referer":  "http://localhost:5000",
-                "X-Title":       "STELLO"
-            },
-            json={"model": model, "messages": messages},
+            headers={"Authorization":"Bearer "+OR_KEY,"Content-Type":"application/json",
+                     "HTTP-Referer":"https://stello-z8yy.onrender.com","X-Title":"STELLO"},
+            json={"model":model,"messages":messages},
             timeout=55
         )
 
         if resp.status_code != 200:
-            try:
-                err = str(resp.json().get("error", {}).get("message", "HTTP " + str(resp.status_code)))
-            except Exception:
-                err = "HTTP " + str(resp.status_code)
-            return jsonify({
-                "reply": "⚠️ API error: " + err,
-                "searched": False,
-                "model": model,
-                "img_gen_prompt": None
-            })
+            try: err = str(resp.json().get("error",{}).get("message","HTTP "+str(resp.status_code)))
+            except: err = "HTTP " + str(resp.status_code)
+            return jsonify({"reply":"⚠️ API error: "+err,"searched":False,"model":model,"img_gen_prompt":None})
 
         rd = resp.json()
         if "choices" not in rd:
-            return jsonify({
-                "reply": "⚠️ Unexpected API response",
-                "searched": False,
-                "model": model,
-                "img_gen_prompt": None
-            })
+            return jsonify({"reply":"⚠️ Unexpected response","searched":False,"model":model,"img_gen_prompt":None})
 
         reply = str(rd["choices"][0]["message"]["content"])
-
-        # Detect inline image gen trigger
         img_gen_prompt = None
         m = re.search(r'\[GENERATE_IMAGE:\s*(.+?)\]', reply, re.DOTALL)
         if m:
             img_gen_prompt = m.group(1).strip()
-            reply = reply.replace(m.group(0), "").strip()
+            reply = reply.replace(m.group(0),"").strip()
 
-        return jsonify({
-            "reply":          reply,
-            "searched":       searched,
-            "model":          model,
-            "img_gen_prompt": img_gen_prompt,
-            "is_easter":      False
-        })
+        return jsonify({"reply":reply,"searched":searched,"model":model,"img_gen_prompt":img_gen_prompt,"is_easter":False})
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            "reply":          "⚠️ Server error: " + str(e),
-            "searched":       False,
-            "model":          DEFAULT,
-            "img_gen_prompt": None
-        })
+        import traceback; traceback.print_exc()
+        return jsonify({"reply":"⚠️ Server error: "+str(e),"searched":False,"model":DEFAULT,"img_gen_prompt":None})
 
 
 @app.route("/generate-image", methods=["POST"])
@@ -416,35 +314,20 @@ def gen_image():
         data   = request.get_json(force=True) or {}
         prompt = str(data.get("prompt") or "").strip()
         source = str(data.get("source") or "pollinations")
-        if not prompt:
-            return jsonify({"error": "No prompt"})
-
+        if not prompt: return jsonify({"error":"No prompt"})
         if source == "dalle":
             resp = requests.post(
                 "https://openrouter.ai/api/v1/images/generations",
-                headers={"Authorization": "Bearer " + OR_KEY,
-                         "Content-Type": "application/json"},
-                json={"model": "openai/dall-e-3",
-                      "prompt": prompt, "n": 1, "size": "1024x1024"},
-                timeout=40
-            )
+                headers={"Authorization":"Bearer "+OR_KEY,"Content-Type":"application/json"},
+                json={"model":"openai/dall-e-3","prompt":prompt,"n":1,"size":"1024x1024"},timeout=40)
             if resp.status_code == 200:
-                return jsonify({"url": resp.json()["data"][0]["url"],
-                                "source": "dall-e-3"})
-
-        clean   = re.sub(r"[^\w\s.,!?'-]", "", prompt)[:400]
-        seed    = abs(hash(prompt)) % 99999
-        url     = (
-            "https://image.pollinations.ai/prompt/"
-            + requests.utils.quote(clean)
-            + "?width=1024&height=1024&nologo=true&seed="
-            + str(seed)
-            + "&enhance=true"
-        )
-        return jsonify({"url": url, "source": "pollinations"})
-
+                return jsonify({"url":resp.json()["data"][0]["url"],"source":"dall-e-3"})
+        clean = re.sub(r"[^\w\s.,!?'-]","",prompt)[:400]
+        seed  = abs(hash(prompt)) % 99999
+        url   = "https://image.pollinations.ai/prompt/"+requests.utils.quote(clean)+"?width=1024&height=1024&nologo=true&seed="+str(seed)+"&enhance=true"
+        return jsonify({"url":url,"source":"pollinations"})
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error":str(e)})
 
 
 @app.route("/proactive", methods=["POST"])
@@ -459,26 +342,18 @@ def proactive():
         if ctx.get("mood"):    lines.append("Mood: "    + str(ctx["mood"]))
         if ctx.get("streak"):  lines.append("Streak: "  + str(ctx["streak"]) + " days")
         ctx_str = "\n".join(lines) if lines else "No context"
-
         resp = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
-            headers={"Authorization": "Bearer " + OR_KEY,
-                     "Content-Type": "application/json"},
-            json={
-                "model": "openai/gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": PROACTIVE_SYS},
-                    {"role": "user",   "content": "Context:\n" + ctx_str + "\n\nGenerate check-in."}
-                ],
-                "max_tokens": 100, "temperature": 0.8
-            },
-            timeout=10
-        )
+            headers={"Authorization":"Bearer "+OR_KEY,"Content-Type":"application/json"},
+            json={"model":"openai/gpt-4o-mini","messages":[
+                {"role":"system","content":PROACTIVE_SYS},
+                {"role":"user","content":"Context:\n"+ctx_str+"\n\nGenerate check-in."}
+            ],"max_tokens":100,"temperature":0.8},timeout=10)
         if resp.status_code == 200:
-            return jsonify({"message": str(resp.json()["choices"][0]["message"]["content"])})
-        return jsonify({"message": "Hey! How's the thesis grind going? 🎯"})
+            return jsonify({"message":str(resp.json()["choices"][0]["message"]["content"])})
+        return jsonify({"message":"Hey! How's it going today? 🎯"})
     except Exception:
-        return jsonify({"message": "Ready to crush it today? 💪"})
+        return jsonify({"message":"Ready to crush it today? 💪"})
 
 
 @app.route("/export-doc", methods=["POST"])
@@ -486,48 +361,33 @@ def export_doc():
     try:
         data    = request.get_json(force=True) or {}
         content = str(data.get("content") or "")
-        title   = str(data.get("title")   or "STELLO Export")
-        fmt     = str(data.get("format")  or "txt")
+        title   = str(data.get("title") or "STELLO Export")
+        fmt     = str(data.get("format") or "txt")
         ts      = datetime.now().strftime("%Y-%m-%d %H:%M")
-        safe    = re.sub(r'[^\w\s-]', '', title).strip().replace(' ', '_') or "export"
-
+        safe    = re.sub(r'[^\w\s-]','',title).strip().replace(' ','_') or "export"
         if fmt == "txt":
-            doc = "STELLO — " + title + "\nExported: " + ts + "\n" + "="*50 + "\n\n" + content
+            doc = "STELLO — "+title+"\nExported: "+ts+"\n"+"="*50+"\n\n"+content
             buf = io.BytesIO(doc.encode('utf-8')); buf.seek(0)
-            return send_file(buf, mimetype='text/plain',
-                             as_attachment=True,
-                             download_name="stello_" + safe + ".txt")
-
+            return send_file(buf,mimetype='text/plain',as_attachment=True,download_name="stello_"+safe+".txt")
         if fmt == "md":
-            doc = "# " + title + "\n> Exported from STELLO · " + ts + "\n\n---\n\n" + content
+            doc = "# "+title+"\n> Exported from STELLO · "+ts+"\n\n---\n\n"+content
             buf = io.BytesIO(doc.encode('utf-8')); buf.seek(0)
-            return send_file(buf, mimetype='text/markdown',
-                             as_attachment=True,
-                             download_name="stello_" + safe + ".md")
-
+            return send_file(buf,mimetype='text/markdown',as_attachment=True,download_name="stello_"+safe+".md")
         if fmt == "pdf":
-            html = (
-                "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>" + title + "</title>"
-                "<style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;"
-                "padding:0 20px;line-height:1.7}pre{background:#f4f4f4;padding:16px;"
-                "border-radius:8px;white-space:pre-wrap}"
+            html = ("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+title+"</title>"
+                "<style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.7}"
+                "pre{background:#f4f4f4;padding:16px;border-radius:8px;white-space:pre-wrap}"
                 "@media print{body{margin:0}}</style></head><body>"
-                "<h1>" + title + "</h1>"
-                "<p style='color:#666;font-size:14px'>Exported from STELLO · " + ts + "</p>"
-                "<hr><pre>" + content + "</pre>"
-                "<script>window.onload=()=>setTimeout(()=>window.print(),500)</script>"
-                "</body></html>"
-            )
+                "<h1>"+title+"</h1><p style='color:#666;font-size:14px'>Exported from STELLO · "+ts+"</p>"
+                "<hr><pre>"+content+"</pre>"
+                "<script>window.onload=()=>setTimeout(()=>window.print(),500)</script></body></html>")
             buf = io.BytesIO(html.encode('utf-8')); buf.seek(0)
-            return send_file(buf, mimetype='text/html',
-                             as_attachment=True,
-                             download_name="stello_" + safe + ".html")
-
-        return jsonify({"error": "Unknown format"})
+            return send_file(buf,mimetype='text/html',as_attachment=True,download_name="stello_"+safe+".html")
+        return jsonify({"error":"Unknown format"})
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error":str(e)})
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port, threaded=True)
+    port = int(os.environ.get("PORT",5000))
+    app.run(debug=False,host="0.0.0.0",port=port,threaded=True)
