@@ -91,29 +91,11 @@ const FONTS = {
 
 // ── INJECT THEME BUILDER INTO SETTINGS ──
 function injectThemeBuilder() {
-  const settingsPanel = document.querySelector('.settings-panel');
-  if (!settingsPanel) return;
-
-  // Add tab
-  const tabs = settingsPanel.querySelector('.sp-tabs');
-  if (tabs && !document.getElementById('tabBuilder')) {
-    const tab = document.createElement('button');
-    tab.className = 'sp-tab';
-    tab.dataset.tab = 'builder';
-    tab.id = 'tabBuilder';
-    tab.textContent = '🎨 Builder';
-    tab.onclick = () => switchTab('builder');
-    tabs.appendChild(tab);
-  }
-
-  // Add content panel
-  if (!document.getElementById('tab-builder')) {
-    const content = document.createElement('div');
-    content.className = 'sp-content';
-    content.id = 'tab-builder';
-    content.style.display = 'none';
-    content.innerHTML = buildThemeBuilderHTML();
-    settingsPanel.appendChild(content);
+  // Tab is already in HTML — just populate content if empty
+  const panel = document.getElementById('tab-builder');
+  if (!panel) return;
+  if (!panel.innerHTML.trim()) {
+    panel.innerHTML = buildThemeBuilderHTML();
     bindThemeBuilderEvents();
   }
 }
@@ -623,9 +605,30 @@ function restoreCustomTheme() {
 // ── HOOK INTO SETTINGS OPEN ──
 const _origOpenSettings = window.openSettings;
 window.openSettings = function(tab) {
-  _origOpenSettings(tab);
+  _origOpenSettings(tab || 'themes');
   injectThemeBuilder();
-  if(tab==='builder') switchTab('builder');
+  if(tab==='builder') {
+    // switch all tabs
+    document.querySelectorAll('.sp-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='builder'));
+    ['themes','models','personality'].forEach(id=>{
+      const el=document.getElementById('tab-'+id);if(el)el.style.display='none';
+    });
+    const bl=document.getElementById('tab-builder');if(bl)bl.style.display='flex';
+  }
+};
+
+// ── OVERRIDE switchTab to handle builder ──
+const _origSwitchTab = window.switchTab;
+window.switchTab = function(tab) {
+  // Always inject builder content first
+  injectThemeBuilder();
+  // Call original for themes/models/personality
+  if(typeof _origSwitchTab === 'function') _origSwitchTab(tab);
+  // Handle builder tab visibility
+  const bl = document.getElementById('tab-builder');
+  if(bl) bl.style.display = tab==='builder' ? 'flex' : 'none';
+  // Mark tab active
+  document.querySelectorAll('.sp-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
 };
 
 // ── INIT ──
