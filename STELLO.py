@@ -23,7 +23,6 @@ DEFAULT = "deepseek/deepseek-chat-v3-0324"
 VISION  = {"openai/gpt-4o","google/gemini-2.5-flash","google/gemini-2.0-flash-001","meta-llama/llama-4-maverick"}
 
 CUTSCENE_MAP = {
-    CUTSCENE_MAP = {
     "ink":"cutscene_ink.html","matcha":"cutscene_ink.html",
     "zen-garden":"cutscene_ink.html","vintage-scholar":"cutscene_ink.html",
     "dark-academia":"cutscene_ink.html","skeleton":"cutscene_ink.html",
