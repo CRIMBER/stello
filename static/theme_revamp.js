@@ -257,14 +257,50 @@ function trDrawBoneDust(ctx, canvas) {
   draw();
 }
 
-// ── HOOK: replace initLiquid calls with trInitFxCanvas ──
+// ── HOOK: override globals ──
 window.initLiquid = trInitFxCanvas;
 
-// Re-init on load and theme switch (setTheme already calls initLiquid internally
-// via the timeout in the original script — our override above makes that
-// automatically route through the new family logic)
-if (document.readyState === 'complete') {
-  setTimeout(trInitFxCanvas, 100);
-} else {
-  window.addEventListener('load', () => setTimeout(trInitFxCanvas, 100));
+// CRITICAL FIX: script.js uses function declarations, so setTheme() calls the
+// LOCAL initLiquid/initParticles — not our window overrides. We must wrap
+// setTheme itself so our versions fire on every theme switch, no refresh needed.
+const _trOrigSetTheme = window.setTheme;
+window.setTheme = function(theme, save = true) {
+  if (typeof _trOrigSetTheme === 'function') {
+    _trOrigSetTheme(theme, save);
+  }
+  // Fire our revamped effects AFTER the original finishes its own timeout (80ms)
+  setTimeout(() => {
+    try { window.initParticles(); } catch(e) {}
+    try { trInitFxCanvas(); } catch(e) {}
+  }, 120);
+};
+
+// Also re-run on window resize so canvases stay correct
+let _trResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_trResizeTimer);
+  _trResizeTimer = setTimeout(() => {
+    try { trInitFxCanvas(); } catch(e) {}
+  }, 200);
+});
+
+// ── BOOT: run immediately on first paint, no refresh required ──
+function trBoot() {
+  // Read whatever theme is active right now
+  const active = localStorage.getItem('stello_theme') || 'ink';
+  if (typeof currentTheme === 'undefined' || !currentTheme) {
+    try { window.currentTheme = active; } catch(e) {}
+  }
+  try { window.initParticles(); } catch(e) {}
+  try { trInitFxCanvas(); } catch(e) {}
 }
+
+// Fire on every possible entry point so animations are live instantly
+if (document.readyState === 'complete') {
+  trBoot();
+} else {
+  window.addEventListener('load', trBoot);
+}
+// Extra safety net — catches cases where script.js finishes after us
+setTimeout(trBoot, 400);
+setTimeout(trBoot, 1000);
