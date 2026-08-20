@@ -1,117 +1,146 @@
 /* ═══════════════════════════════════════
-   STELLO — Theme Builder (Patch A)
-   Live preview · AI generator · Save/load
+   STELLO — Theme Builder REVAMP
+   Fix: switching back to preset themes
+   now properly clears all custom vars
 ═══════════════════════════════════════ */
 
-// ── THEME BUILDER STATE ──
-let tbOpen = false;
-let customThemes = {};  // saved custom themes
-let currentTB = {
+// ── STATE ──
+let tbCurrentTheme = {
   name: 'My Theme',
-  bg1: '#0a0a0f',
-  bg2: '#1a1a2e',
-  accent: '#4a90ff',
-  accent2: '#80b8ff',
-  style: 'glass',      // glass | brutal | neo | neon | minimal
-  particles: 'dots',   // dots | stars | embers | none
-  radius: 12,
-  font: 'syne',
+  bg1: '#0a0a0f', bg2: '#1a1a2e',
+  accent: '#4a90ff', accent2: '#80b8ff',
+  style: 'glass', particles: 'dots',
+  radius: 12, font: 'syne',
 };
 
-const STYLE_PRESETS = {
-  glass: {
-    '--sur':      'rgba(255,255,255,0.05)',
-    '--surh':     'rgba(255,255,255,0.09)',
-    '--bdr':      'rgba(255,255,255,0.1)',
-    '--bdra':     'rgba(255,255,255,0.25)',
-    '--bbub':     'rgba(255,255,255,0.06)',
-    '--ubub':     'rgba(255,255,255,0.12)',
-    '--ibg':      'rgba(255,255,255,0.06)',
-    '--sbg':      'rgba(10,10,20,0.96)',
-    '--tbar':     'rgba(10,10,20,0.85)',
-    'backdrop':   'blur(20px)',
-  },
-  brutal: {
-    '--sur':      'rgba(255,255,255,0)',
-    '--surh':     'rgba(255,255,255,0.05)',
-    '--bdr':      'rgba(255,255,255,0.9)',
-    '--bdra':     'rgba(255,255,255,1)',
-    '--bbub':     'rgba(0,0,0,0)',
-    '--ubub':     'rgba(255,255,255,0.15)',
-    '--ibg':      'rgba(0,0,0,0)',
-    '--sbg':      'rgba(0,0,0,0.98)',
-    '--tbar':     'rgba(0,0,0,0.95)',
-    'backdrop':   'none',
-  },
-  neo: {
-    '--sur':      'rgba(255,255,255,0.03)',
-    '--surh':     'rgba(255,255,255,0.06)',
-    '--bdr':      'rgba(255,255,255,0.04)',
-    '--bdra':     'rgba(255,255,255,0.08)',
-    '--bbub':     'rgba(255,255,255,0.04)',
-    '--ubub':     'rgba(255,255,255,0.08)',
-    '--ibg':      'rgba(255,255,255,0.03)',
-    '--sbg':      'rgba(15,15,25,0.99)',
-    '--tbar':     'rgba(12,12,22,0.95)',
-    'backdrop':   'blur(30px)',
-  },
-  neon: {
-    '--sur':      'rgba(255,255,255,0.03)',
-    '--surh':     'rgba(255,255,255,0.07)',
-    '--bdr':      'rgba(var(--ac-rgb),0.3)',
-    '--bdra':     'rgba(var(--ac-rgb),0.7)',
-    '--bbub':     'rgba(var(--ac-rgb),0.05)',
-    '--ubub':     'rgba(var(--ac-rgb),0.18)',
-    '--ibg':      'rgba(var(--ac-rgb),0.05)',
-    '--sbg':      'rgba(5,5,15,0.98)',
-    '--tbar':     'rgba(5,5,15,0.92)',
-    'backdrop':   'blur(16px)',
-  },
-  minimal: {
-    '--sur':      'rgba(255,255,255,0.03)',
-    '--surh':     'rgba(255,255,255,0.06)',
-    '--bdr':      'rgba(255,255,255,0.06)',
-    '--bdra':     'rgba(255,255,255,0.12)',
-    '--bbub':     'rgba(255,255,255,0.04)',
-    '--ubub':     'rgba(255,255,255,0.08)',
-    '--ibg':      'rgba(255,255,255,0.03)',
-    '--sbg':      'rgba(8,8,12,0.99)',
-    '--tbar':     'rgba(8,8,12,0.95)',
-    'backdrop':   'blur(8px)',
-  },
+const TB_STYLE_PRESETS = {
+  glass:   { '--sur':'rgba(255,255,255,0.05)', '--surh':'rgba(255,255,255,0.09)', '--bdr':'rgba(255,255,255,0.1)',  '--bdra':'rgba(255,255,255,0.25)', '--bbub':'rgba(255,255,255,0.06)', '--ubub':'rgba(255,255,255,0.12)', '--ibg':'rgba(255,255,255,0.06)',  '--sbg':'rgba(10,10,20,0.96)',   '--tbar':'rgba(10,10,20,0.85)' },
+  brutal:  { '--sur':'rgba(0,0,0,0)',          '--surh':'rgba(255,255,255,0.05)', '--bdr':'rgba(255,255,255,0.9)', '--bdra':'rgba(255,255,255,1)',    '--bbub':'rgba(0,0,0,0)',         '--ubub':'rgba(255,255,255,0.15)','--ibg':'rgba(0,0,0,0)',          '--sbg':'rgba(0,0,0,0.98)',      '--tbar':'rgba(0,0,0,0.95)' },
+  neo:     { '--sur':'rgba(255,255,255,0.03)', '--surh':'rgba(255,255,255,0.06)', '--bdr':'rgba(255,255,255,0.04)','--bdra':'rgba(255,255,255,0.08)', '--bbub':'rgba(255,255,255,0.04)','--ubub':'rgba(255,255,255,0.08)','--ibg':'rgba(255,255,255,0.03)', '--sbg':'rgba(15,15,25,0.99)',   '--tbar':'rgba(12,12,22,0.95)' },
+  neon:    { '--sur':'rgba(255,255,255,0.03)', '--surh':'rgba(255,255,255,0.07)', '--bdr':'rgba(74,144,255,0.3)',  '--bdra':'rgba(74,144,255,0.7)',   '--bbub':'rgba(74,144,255,0.05)', '--ubub':'rgba(74,144,255,0.18)', '--ibg':'rgba(74,144,255,0.05)', '--sbg':'rgba(5,5,15,0.98)',     '--tbar':'rgba(5,5,15,0.92)' },
+  minimal: { '--sur':'rgba(255,255,255,0.03)', '--surh':'rgba(255,255,255,0.06)', '--bdr':'rgba(255,255,255,0.06)','--bdra':'rgba(255,255,255,0.12)', '--bbub':'rgba(255,255,255,0.04)','--ubub':'rgba(255,255,255,0.08)','--ibg':'rgba(255,255,255,0.03)', '--sbg':'rgba(8,8,12,0.99)',     '--tbar':'rgba(8,8,12,0.95)' },
 };
 
-const FONTS = {
-  syne:    "'Syne', sans-serif",
-  mono:    "'DM Mono', monospace",
-  serif:   "'Playfair Display', serif",
-  jp:      "'Noto Serif JP', serif",
-  rajdhani:"'Rajdhani', sans-serif",
+const TB_FONTS = {
+  syne:     "'Syne', sans-serif",
+  mono:     "'DM Mono', monospace",
+  serif:    "'Playfair Display', serif",
+  jp:       "'Noto Serif JP', serif",
+  rajdhani: "'Rajdhani', sans-serif",
 };
 
-// ── INJECT THEME BUILDER INTO SETTINGS ──
-function injectThemeBuilder() {
-  // Tab is already in HTML — just populate content if empty
-  const panel = document.getElementById('tab-builder');
+// ALL CSS vars the builder can touch — so we can cleanly remove them
+const TB_ALL_VARS = [
+  '--bg','--ac','--ac2','--tx','--txm','--txd','--glow','--sg',
+  '--rc','--fd','--st','--ac-rgb','--sur','--surh','--bdr','--bdra',
+  '--bbub','--ubub','--ibg','--sbg','--tbar','--bg2g','--bbdr',
+];
+
+// ── KEY FIX: clear all custom vars when switching to preset ──
+function tbClearCustomVars() {
+  const root = document.documentElement;
+  TB_ALL_VARS.forEach(v => root.style.removeProperty(v));
+  root.style.removeProperty('background');
+  document.body.style.removeProperty('background');
+  localStorage.removeItem('stello_custom_theme');
+}
+
+// ── PATCH setTheme to always clear custom vars first ──
+const _tbOrigSetTheme = window.setTheme;
+window.setTheme = function(theme, save = true) {
+  // Always clear custom CSS overrides before applying any theme
+  tbClearCustomVars();
+  // Remove custom data-theme if switching to preset
+  if (theme !== 'custom') {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  // Call original
+  if (typeof _tbOrigSetTheme === 'function') {
+    _tbOrigSetTheme(theme, save);
+  }
+  // Update builder tab active state in settings if open
+  document.querySelectorAll('.theme-card').forEach(c =>
+    c.classList.toggle('active', c.dataset.theme === theme)
+  );
+};
+
+// ── INJECT BUILDER TAB INTO SETTINGS ──
+function tbInject() {
+  const panel = document.querySelector('.settings-panel');
   if (!panel) return;
-  if (!panel.innerHTML.trim()) {
-    panel.innerHTML = buildThemeBuilderHTML();
-    bindThemeBuilderEvents();
+
+  // Add tab button if missing
+  const tabs = panel.querySelector('.sp-tabs');
+  if (tabs && !document.getElementById('tbTabBtn')) {
+    const btn = document.createElement('button');
+    btn.className = 'sp-tab';
+    btn.id = 'tbTabBtn';
+    btn.dataset.tab = 'builder';
+    btn.textContent = '🎨 Builder';
+    btn.onclick = () => tbSwitchToBuilder();
+    tabs.appendChild(btn);
+  }
+
+  // Add content panel if missing
+  if (!document.getElementById('tab-builder')) {
+    const div = document.createElement('div');
+    div.className = 'sp-content';
+    div.id = 'tab-builder';
+    div.style.display = 'none';
+    div.innerHTML = tbBuildHTML();
+    panel.appendChild(div);
+    tbBindEvents();
   }
 }
 
-function buildThemeBuilderHTML() {
+function tbSwitchToBuilder() {
+  tbInject();
+  // Hide all other tabs
+  ['themes','models','personality'].forEach(id => {
+    const el = document.getElementById('tab-' + id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('tab-builder').style.display = 'flex';
+  // Update tab active states
+  document.querySelectorAll('.sp-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === 'builder')
+  );
+  // Load saved themes list
+  tbRenderSaved();
+}
+
+// Patch openSettings to inject builder
+const _tbOrigOpen = window.openSettings;
+window.openSettings = function(tab) {
+  if (typeof _tbOrigOpen === 'function') _tbOrigOpen(tab || 'themes');
+  tbInject();
+  if (tab === 'builder') tbSwitchToBuilder();
+};
+
+// Patch switchTab to handle builder
+const _tbOrigSwitch = window.switchTab;
+window.switchTab = function(tab) {
+  if (tab === 'builder') { tbSwitchToBuilder(); return; }
+  // Hide builder panel when switching away
+  const bl = document.getElementById('tab-builder');
+  if (bl) bl.style.display = 'none';
+  if (typeof _tbOrigSwitch === 'function') _tbOrigSwitch(tab);
+};
+
+// ── BUILD HTML ──
+function tbBuildHTML() {
   return `
 <div class="tb-wrap">
+
   <!-- AI Generator -->
   <div class="tb-section">
     <div class="tb-section-title">✨ AI Theme Generator</div>
-    <p class="tb-desc">Describe your vibe and STELLO will cook up theme options for you.</p>
-    <textarea id="tbAiPrompt" class="tb-textarea" placeholder="e.g. dark ocean vibes, inspired by Interstellar, cyberpunk Tokyo at night, pastel anime aesthetic..."></textarea>
-    <button class="tb-btn-ai" id="tbAiGenBtn" onclick="generateAITheme()">
-      <span id="tbAiBtnText">✨ Generate Theme Options</span>
+    <p class="tb-desc">Describe your vibe — STELLO cooks up theme options.</p>
+    <textarea id="tbAiPrompt" class="tb-textarea" placeholder="e.g. dark ocean, cyberpunk Tokyo, pastel anime, Interstellar..."></textarea>
+    <button class="tb-btn-ai" id="tbAiBtn" onclick="tbGenerateAI()">
+      <span id="tbAiBtnTxt">✨ Generate Theme Options</span>
     </button>
-    <div id="tbAiResults" class="tb-ai-results" style="display:none"></div>
+    <div id="tbAiResults" style="display:none" class="tb-ai-results"></div>
   </div>
 
   <div class="tb-divider">— or build manually —</div>
@@ -124,19 +153,19 @@ function buildThemeBuilderHTML() {
 
   <!-- Background -->
   <div class="tb-section">
-    <div class="tb-section-title">Background Colors</div>
+    <div class="tb-section-title">Background</div>
     <div class="tb-color-row">
       <div class="tb-color-item">
         <label class="tb-color-label">Primary</label>
         <div class="tb-color-wrap">
-          <input type="color" id="tbBg1" class="tb-color" value="#0a0a0f" oninput="previewTheme()"/>
+          <input type="color" id="tbBg1" class="tb-color" value="#0a0a0f" oninput="tbSyncColor('tbBg1');tbPreview()"/>
           <span class="tb-color-val" id="tbBg1Val">#0a0a0f</span>
         </div>
       </div>
       <div class="tb-color-item">
         <label class="tb-color-label">Secondary</label>
         <div class="tb-color-wrap">
-          <input type="color" id="tbBg2" class="tb-color" value="#1a1a2e" oninput="previewTheme()"/>
+          <input type="color" id="tbBg2" class="tb-color" value="#1a1a2e" oninput="tbSyncColor('tbBg2');tbPreview()"/>
           <span class="tb-color-val" id="tbBg2Val">#1a1a2e</span>
         </div>
       </div>
@@ -150,14 +179,14 @@ function buildThemeBuilderHTML() {
       <div class="tb-color-item">
         <label class="tb-color-label">Primary</label>
         <div class="tb-color-wrap">
-          <input type="color" id="tbAccent" class="tb-color" value="#4a90ff" oninput="previewTheme()"/>
+          <input type="color" id="tbAccent" class="tb-color" value="#4a90ff" oninput="tbSyncColor('tbAccent');tbPreview()"/>
           <span class="tb-color-val" id="tbAccentVal">#4a90ff</span>
         </div>
       </div>
       <div class="tb-color-item">
         <label class="tb-color-label">Secondary</label>
         <div class="tb-color-wrap">
-          <input type="color" id="tbAccent2" class="tb-color" value="#80b8ff" oninput="previewTheme()"/>
+          <input type="color" id="tbAccent2" class="tb-color" value="#80b8ff" oninput="tbSyncColor('tbAccent2');tbPreview()"/>
           <span class="tb-color-val" id="tbAccent2Val">#80b8ff</span>
         </div>
       </div>
@@ -166,23 +195,13 @@ function buildThemeBuilderHTML() {
 
   <!-- Style -->
   <div class="tb-section">
-    <div class="tb-section-title">Style Preset</div>
+    <div class="tb-section-title">Style</div>
     <div class="tb-style-row">
-      <button class="tb-style-btn active" data-style="glass" onclick="setStyle('glass',this)">
-        <span>🪟</span><span>Glass</span>
-      </button>
-      <button class="tb-style-btn" data-style="brutal" onclick="setStyle('brutal',this)">
-        <span>⬛</span><span>Brutal</span>
-      </button>
-      <button class="tb-style-btn" data-style="neo" onclick="setStyle('neo',this)">
-        <span>🌫️</span><span>Neo</span>
-      </button>
-      <button class="tb-style-btn" data-style="neon" onclick="setStyle('neon',this)">
-        <span>💜</span><span>Neon</span>
-      </button>
-      <button class="tb-style-btn" data-style="minimal" onclick="setStyle('minimal',this)">
-        <span>◻️</span><span>Minimal</span>
-      </button>
+      <button class="tb-style-btn active" data-style="glass"   onclick="tbSetStyle('glass',this)">  🪟 Glass</button>
+      <button class="tb-style-btn"        data-style="brutal"  onclick="tbSetStyle('brutal',this)"> ⬛ Brutal</button>
+      <button class="tb-style-btn"        data-style="neo"     onclick="tbSetStyle('neo',this)">    🌫 Neo</button>
+      <button class="tb-style-btn"        data-style="neon"    onclick="tbSetStyle('neon',this)">   💜 Neon</button>
+      <button class="tb-style-btn"        data-style="minimal" onclick="tbSetStyle('minimal',this)">◻️ Min</button>
     </div>
   </div>
 
@@ -190,25 +209,17 @@ function buildThemeBuilderHTML() {
   <div class="tb-section">
     <div class="tb-section-title">Particles</div>
     <div class="tb-style-row">
-      <button class="tb-style-btn active" data-p="dots" onclick="setParticles('dots',this)">
-        <span>·</span><span>Dots</span>
-      </button>
-      <button class="tb-style-btn" data-p="stars" onclick="setParticles('stars',this)">
-        <span>★</span><span>Stars</span>
-      </button>
-      <button class="tb-style-btn" data-p="embers" onclick="setParticles('embers',this)">
-        <span>🔥</span><span>Embers</span>
-      </button>
-      <button class="tb-style-btn" data-p="none" onclick="setParticles('none',this)">
-        <span>○</span><span>None</span>
-      </button>
+      <button class="tb-style-btn active" data-p="dots"   onclick="tbSetParticles('dots',this)">  · Dots</button>
+      <button class="tb-style-btn"        data-p="stars"  onclick="tbSetParticles('stars',this)"> ★ Stars</button>
+      <button class="tb-style-btn"        data-p="embers" onclick="tbSetParticles('embers',this)">🔥 Embers</button>
+      <button class="tb-style-btn"        data-p="none"   onclick="tbSetParticles('none',this)">  ○ None</button>
     </div>
   </div>
 
-  <!-- Border Radius -->
+  <!-- Radius -->
   <div class="tb-section">
     <div class="tb-section-title">Border Radius — <span id="tbRadiusVal">12px</span></div>
-    <input type="range" id="tbRadius" class="tb-slider" min="0" max="24" value="12" oninput="previewTheme()"/>
+    <input type="range" id="tbRadius" class="tb-slider" min="0" max="24" value="12" oninput="tbPreview()"/>
     <div class="tb-radius-labels"><span>Sharp</span><span>Round</span></div>
   </div>
 
@@ -216,22 +227,22 @@ function buildThemeBuilderHTML() {
   <div class="tb-section">
     <div class="tb-section-title">Font</div>
     <div class="tb-font-row">
-      <button class="tb-font-btn active" data-font="syne" onclick="setFont('syne',this)" style="font-family:'Syne',sans-serif">Syne</button>
-      <button class="tb-font-btn" data-font="mono" onclick="setFont('mono',this)" style="font-family:'DM Mono',monospace">Mono</button>
-      <button class="tb-font-btn" data-font="serif" onclick="setFont('serif',this)" style="font-family:'Playfair Display',serif">Serif</button>
-      <button class="tb-font-btn" data-font="jp" onclick="setFont('jp',this)" style="font-family:'Noto Serif JP',serif">和</button>
-      <button class="tb-font-btn" data-font="rajdhani" onclick="setFont('rajdhani',this)" style="font-family:'Rajdhani',sans-serif">Raj</button>
+      <button class="tb-font-btn active" data-font="syne"     onclick="tbSetFont('syne',this)"     style="font-family:'Syne',sans-serif">Syne</button>
+      <button class="tb-font-btn"        data-font="mono"     onclick="tbSetFont('mono',this)"     style="font-family:'DM Mono',monospace">Mono</button>
+      <button class="tb-font-btn"        data-font="serif"    onclick="tbSetFont('serif',this)"    style="font-family:'Playfair Display',serif">Serif</button>
+      <button class="tb-font-btn"        data-font="jp"       onclick="tbSetFont('jp',this)"       style="font-family:'Noto Serif JP',serif">和</button>
+      <button class="tb-font-btn"        data-font="rajdhani" onclick="tbSetFont('rajdhani',this)" style="font-family:'Rajdhani',sans-serif">Raj</button>
     </div>
   </div>
 
   <!-- Preview -->
   <div class="tb-section">
     <div class="tb-section-title">Live Preview</div>
-    <div class="tb-preview" id="tbPreview">
-      <div class="tb-prev-bubble tb-prev-user">Hey STELLO, this looks fire 🔥</div>
-      <div class="tb-prev-bubble tb-prev-bot">fr bro, you just cooked a legendary theme 🎨</div>
+    <div class="tb-preview" id="tbPreviewBox">
+      <div class="tb-prev-bubble tb-prev-bot">Hey — this theme looks fire 🔥</div>
+      <div class="tb-prev-bubble tb-prev-user">fr bro, you cooked it 🎨</div>
       <div class="tb-prev-input">
-        <span style="flex:1;opacity:.4;font-size:13px">speak your mind...</span>
+        <span style="flex:1;opacity:.35;font-size:13px">speak your mind...</span>
         <div class="tb-prev-send">→</div>
       </div>
     </div>
@@ -239,183 +250,172 @@ function buildThemeBuilderHTML() {
 
   <!-- Actions -->
   <div class="tb-actions">
-    <button class="tb-btn-save" onclick="saveCustomTheme()">💾 Save Theme</button>
-    <button class="tb-btn-apply" onclick="applyCustomTheme()">✓ Apply Now</button>
+    <button class="tb-btn-save"  onclick="tbSave()">💾 Save</button>
+    <button class="tb-btn-apply" onclick="tbApply()">✓ Apply Now</button>
   </div>
 
   <!-- Saved themes -->
   <div class="tb-section" id="tbSavedSection" style="display:none">
-    <div class="tb-section-title">Your Saved Themes</div>
+    <div class="tb-section-title">Saved Themes</div>
     <div id="tbSavedList" class="tb-saved-list"></div>
   </div>
 </div>`;
 }
 
-function bindThemeBuilderEvents() {
-  // Sync color value displays
-  ['tbBg1','tbBg2','tbAccent','tbAccent2'].forEach(id => {
-    const el = document.getElementById(id);
-    const val = document.getElementById(id+'Val');
-    if(el && val) el.addEventListener('input', () => { val.textContent = el.value; });
+// ── BIND EVENTS ──
+function tbBindEvents() {
+  const nameEl = document.getElementById('tbName');
+  if (nameEl) nameEl.addEventListener('input', () => {
+    tbCurrentTheme.name = nameEl.value || 'My Theme';
   });
   const radius = document.getElementById('tbRadius');
-  const radiusVal = document.getElementById('tbRadiusVal');
-  if(radius && radiusVal) radius.addEventListener('input', () => { radiusVal.textContent = radius.value+'px'; });
-  const nameEl = document.getElementById('tbName');
-  if(nameEl) nameEl.addEventListener('input', () => { currentTB.name = nameEl.value || 'My Theme'; });
-  // Load saved themes
-  renderSavedThemes();
+  const radVal = document.getElementById('tbRadiusVal');
+  if (radius && radVal) radius.addEventListener('input', () => {
+    radVal.textContent = radius.value + 'px';
+  });
 }
 
-// ── LIVE PREVIEW ──
-function previewTheme() {
-  currentTB.bg1    = document.getElementById('tbBg1')?.value || currentTB.bg1;
-  currentTB.bg2    = document.getElementById('tbBg2')?.value || currentTB.bg2;
-  currentTB.accent = document.getElementById('tbAccent')?.value || currentTB.accent;
-  currentTB.accent2= document.getElementById('tbAccent2')?.value || currentTB.accent2;
-  currentTB.radius = parseInt(document.getElementById('tbRadius')?.value || 12);
-
-  const preview = document.getElementById('tbPreview');
-  if (!preview) return;
-
-  const preset = STYLE_PRESETS[currentTB.style] || STYLE_PRESETS.glass;
-  const acRGB = hexToRGB(currentTB.accent);
-
-  preview.style.background = `linear-gradient(135deg,${currentTB.bg1},${currentTB.bg2})`;
-  preview.style.borderRadius = currentTB.radius + 'px';
-  preview.style.borderColor = currentTB.accent + '44';
-
-  const userBub = preview.querySelector('.tb-prev-user');
-  const botBub = preview.querySelector('.tb-prev-bot');
-  const inp = preview.querySelector('.tb-prev-input');
-  const send = preview.querySelector('.tb-prev-send');
-
-  if(userBub){
-    userBub.style.background = currentTB.accent + '22';
-    userBub.style.borderColor = currentTB.accent + '66';
-    userBub.style.borderRadius = currentTB.radius + 'px';
-    userBub.style.color = '#fff';
-  }
-  if(botBub){
-    botBub.style.background = preset['--bbub'] || 'rgba(255,255,255,0.06)';
-    botBub.style.borderColor = preset['--bdr'] || 'rgba(255,255,255,0.1)';
-    botBub.style.borderRadius = currentTB.radius + 'px';
-    botBub.style.color = '#fff';
-  }
-  if(inp){
-    inp.style.background = preset['--ibg'] || 'rgba(255,255,255,0.06)';
-    inp.style.borderColor = preset['--bdr'] || 'rgba(255,255,255,0.1)';
-    inp.style.borderRadius = currentTB.radius + 'px';
-    inp.style.color = '#fff';
-  }
-  if(send){
-    send.style.background = `linear-gradient(135deg,${currentTB.accent},${currentTB.accent2})`;
-    send.style.borderRadius = Math.min(currentTB.radius, 10) + 'px';
-  }
+function tbSyncColor(id) {
+  const el = document.getElementById(id);
+  const val = document.getElementById(id + 'Val');
+  if (el && val) val.textContent = el.value;
 }
 
-function setStyle(style, btn) {
-  currentTB.style = style;
+// ── STYLE / PARTICLE / FONT SETTERS ──
+function tbSetStyle(s, btn) {
+  tbCurrentTheme.style = s;
   document.querySelectorAll('.tb-style-btn[data-style]').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  previewTheme();
+  tbPreview();
 }
-
-function setParticles(type, btn) {
-  currentTB.particles = type;
+function tbSetParticles(p, btn) {
+  tbCurrentTheme.particles = p;
   document.querySelectorAll('.tb-style-btn[data-p]').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
-
-function setFont(font, btn) {
-  currentTB.font = font;
+function tbSetFont(f, btn) {
+  tbCurrentTheme.font = f;
   document.querySelectorAll('.tb-font-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const preview = document.getElementById('tbPreview');
-  if(preview) preview.style.fontFamily = FONTS[font] || FONTS.syne;
+  const preview = document.getElementById('tbPreviewBox');
+  if (preview) preview.style.fontFamily = TB_FONTS[f] || TB_FONTS.syne;
+}
+
+// ── LIVE PREVIEW ──
+function tbPreview() {
+  tbCurrentTheme.bg1    = document.getElementById('tbBg1')?.value    || tbCurrentTheme.bg1;
+  tbCurrentTheme.bg2    = document.getElementById('tbBg2')?.value    || tbCurrentTheme.bg2;
+  tbCurrentTheme.accent = document.getElementById('tbAccent')?.value || tbCurrentTheme.accent;
+  tbCurrentTheme.accent2= document.getElementById('tbAccent2')?.value|| tbCurrentTheme.accent2;
+  tbCurrentTheme.radius = parseInt(document.getElementById('tbRadius')?.value || 12);
+
+  const rv = document.getElementById('tbRadiusVal');
+  if (rv) rv.textContent = tbCurrentTheme.radius + 'px';
+
+  const box = document.getElementById('tbPreviewBox');
+  if (!box) return;
+
+  const preset = TB_STYLE_PRESETS[tbCurrentTheme.style] || TB_STYLE_PRESETS.glass;
+  const rc = tbCurrentTheme.radius + 'px';
+
+  box.style.background    = `linear-gradient(135deg,${tbCurrentTheme.bg1},${tbCurrentTheme.bg2})`;
+  box.style.borderColor   = tbCurrentTheme.accent + '44';
+  box.style.borderRadius  = rc;
+  box.style.fontFamily    = TB_FONTS[tbCurrentTheme.font] || TB_FONTS.syne;
+
+  const bot  = box.querySelector('.tb-prev-bot');
+  const user = box.querySelector('.tb-prev-user');
+  const inp  = box.querySelector('.tb-prev-input');
+  const send = box.querySelector('.tb-prev-send');
+
+  if (bot)  { bot.style.background  = preset['--bbub'] || 'rgba(255,255,255,.06)'; bot.style.borderColor  = preset['--bdr']  || 'rgba(255,255,255,.1)';  bot.style.borderRadius = rc; }
+  if (user) { user.style.background = tbCurrentTheme.accent + '22';                user.style.borderColor = tbCurrentTheme.accent + '66';                user.style.borderRadius = rc; }
+  if (inp)  { inp.style.background  = preset['--ibg'] || 'rgba(255,255,255,.06)'; inp.style.borderColor  = preset['--bdr']  || 'rgba(255,255,255,.1)';  inp.style.borderRadius = rc; }
+  if (send) { send.style.background = `linear-gradient(135deg,${tbCurrentTheme.accent},${tbCurrentTheme.accent2})`; send.style.borderRadius = Math.min(tbCurrentTheme.radius, 10) + 'px'; }
 }
 
 // ── APPLY CUSTOM THEME ──
-function applyCustomTheme() {
-  const preset = STYLE_PRESETS[currentTB.style] || STYLE_PRESETS.glass;
+function tbApply() {
+  const t = tbCurrentTheme;
+  const preset = TB_STYLE_PRESETS[t.style] || TB_STYLE_PRESETS.glass;
   const root = document.documentElement;
-  const acRGB = hexToRGB(currentTB.accent);
-  const ac2RGB = hexToRGB(currentTB.accent2);
-  const txColor = isLight(currentTB.bg1) ? '#0a0a0a' : '#f0f0ff';
+  const txColor = tbIsLight(t.bg1) ? '#0a0a0a' : '#f0f0ff';
+  const acRGB = tbHexRGB(t.accent);
 
-  // Set CSS variables
-  root.style.setProperty('--bg', currentTB.bg1);
-  root.style.setProperty('--ac', currentTB.accent);
-  root.style.setProperty('--ac2', currentTB.accent2);
-  root.style.setProperty('--tx', txColor);
-  root.style.setProperty('--txm', txColor + 'aa');
-  root.style.setProperty('--txd', txColor + '55');
-  root.style.setProperty('--glow', currentTB.accent + '33');
-  root.style.setProperty('--sg', `linear-gradient(135deg,${currentTB.accent},${currentTB.accent2})`);
-  root.style.setProperty('--rc', currentTB.radius + 'px');
-  root.style.setProperty('--fd', FONTS[currentTB.font] || FONTS.syne);
-  root.style.setProperty('--st', currentTB.accent2);
-  root.style.setProperty('--ac-rgb', acRGB);
+  // Set custom theme marker
+  root.setAttribute('data-theme', 'custom');
+  localStorage.setItem('stello_theme', 'custom');
 
-  Object.entries(preset).forEach(([key, val]) => {
-    if(key !== 'backdrop') root.style.setProperty(key, val);
+  // Apply all CSS variables inline
+  const vars = {
+    '--bg':   t.bg1,
+    '--ac':   t.accent,
+    '--ac2':  t.accent2,
+    '--tx':   txColor,
+    '--txm':  txColor + 'aa',
+    '--txd':  txColor + '55',
+    '--glow': t.accent + '33',
+    '--sg':   `linear-gradient(135deg,${t.accent},${t.accent2})`,
+    '--rc':   t.radius + 'px',
+    '--fd':   TB_FONTS[t.font] || TB_FONTS.syne,
+    '--st':   t.accent2,
+    '--ac-rgb': acRGB,
+    ...preset,
+  };
+  Object.entries(vars).forEach(([k, v]) => {
+    if (k !== 'backdrop') root.style.setProperty(k, v);
   });
 
-  // Set body background gradient
-  document.body.style.background = `linear-gradient(135deg,${currentTB.bg1} 0%,${currentTB.bg2} 100%)`;
+  // Body background
+  document.body.style.background = `linear-gradient(135deg,${t.bg1} 0%,${t.bg2} 100%)`;
 
-  // Reinit particles with new accent color
-  if(currentTB.particles !== 'none') {
-    if(_p){try{_p.destroy();}catch(e){}_p=null;}
-    const pColor = [currentTB.accent, currentTB.accent2];
-    tsParticles.load('particles',{
-      particles:{
-        number:{value: currentTB.particles==='embers'?40:20},
-        color:{value:pColor},
-        opacity:{value:.3,random:true},
-        move:{enable:true,speed: currentTB.particles==='embers'?.5:.15,random:true,out_mode:'out',
-          direction: currentTB.particles==='embers'?'top':'none'},
-        size:{value:{min:1,max: currentTB.particles==='stars'?3:2},random:true},
-        links:{enable:false}
-      },detectRetina:true
-    }).then(p=>_p=p);
-  } else {
-    if(_p){try{_p.destroy();}catch(e){}_p=null;}
+  // Update brand label
+  const brandSub = document.getElementById('brandSub');
+  if (brandSub) brandSub.textContent = '✨ ' + t.name.toUpperCase();
+
+  // Reinit particles
+  if (t.particles !== 'none' && typeof tsParticles !== 'undefined') {
+    if (window._p) { try { window._p.destroy(); } catch(e){} window._p = null; }
+    tsParticles.load('particles', {
+      particles: {
+        number: { value: t.particles === 'embers' ? 40 : 20 },
+        color: { value: [t.accent, t.accent2] },
+        opacity: { value: .3, random: true },
+        move: { enable: true, speed: t.particles === 'embers' ? .5 : .15, random: true, out_mode: 'out',
+          direction: t.particles === 'embers' ? 'top' : 'none' },
+        size: { value: { min: 1, max: t.particles === 'stars' ? 3 : 2 }, random: true },
+        links: { enable: false }
+      }, detectRetina: true
+    }).then(p => window._p = p);
+  } else if (t.particles === 'none' && window._p) {
+    try { window._p.destroy(); } catch(e){} window._p = null;
   }
 
-  // Update brand sub
-  const brandSub = document.getElementById('brandSub');
-  if(brandSub) brandSub.textContent = '✨ ' + currentTB.name.toUpperCase();
+  // Save to localStorage
+  localStorage.setItem('stello_custom_theme', JSON.stringify(t));
 
-  // Store as active custom theme
-  localStorage.setItem('stello_custom_theme', JSON.stringify(currentTB));
-  localStorage.setItem('stello_theme', 'custom');
-  document.documentElement.removeAttribute('data-theme');
-  document.documentElement.setAttribute('data-theme','custom');
-
-  closeSettings();
-  playSound('send');
+  // Close settings
+  if (typeof closeSettings === 'function') closeSettings();
+  if (typeof playSound === 'function') playSound('send');
 }
 
-// ── SAVE CUSTOM THEME ──
-function saveCustomTheme() {
+// ── SAVE THEME ──
+function tbSave() {
   const name = document.getElementById('tbName')?.value.trim() || 'My Theme';
-  currentTB.name = name;
+  tbCurrentTheme.name = name;
   const saved = JSON.parse(localStorage.getItem('stello_saved_themes') || '{}');
-  saved[name] = {...currentTB};
+  saved[name] = { ...tbCurrentTheme };
   localStorage.setItem('stello_saved_themes', JSON.stringify(saved));
-  customThemes = saved;
-  renderSavedThemes();
-  applyCustomTheme();
-  if(chatStarted) showSystemMsg('✅ Theme **"'+name+'"** saved and applied!');
+  tbRenderSaved();
+  tbApply();
 }
 
-function renderSavedThemes() {
+// ── RENDER SAVED THEMES ──
+function tbRenderSaved() {
   const saved = JSON.parse(localStorage.getItem('stello_saved_themes') || '{}');
-  customThemes = saved;
   const list = document.getElementById('tbSavedList');
   const section = document.getElementById('tbSavedSection');
-  if(!list || !section) return;
+  if (!list || !section) return;
   const keys = Object.keys(saved);
   section.style.display = keys.length ? 'block' : 'none';
   list.innerHTML = '';
@@ -430,64 +430,66 @@ function renderSavedThemes() {
         <div class="tb-saved-style">${t.style} · ${t.particles}</div>
       </div>
       <div class="tb-saved-btns">
-        <button onclick="loadSavedTheme('${name}')" class="tb-saved-apply">Apply</button>
-        <button onclick="deleteSavedTheme('${name}')" class="tb-saved-del">✕</button>
+        <button onclick="tbLoadSaved('${name}')" class="tb-saved-apply">Apply</button>
+        <button onclick="tbDeleteSaved('${name}')" class="tb-saved-del">✕</button>
       </div>`;
     list.appendChild(item);
   });
 }
 
-function loadSavedTheme(name) {
+function tbLoadSaved(name) {
   const saved = JSON.parse(localStorage.getItem('stello_saved_themes') || '{}');
-  if(!saved[name]) return;
-  currentTB = {...saved[name]};
-  // Update UI inputs
-  const set = (id, val) => { const el=document.getElementById(id); if(el)el.value=val; };
-  set('tbBg1', currentTB.bg1); set('tbBg2', currentTB.bg2);
-  set('tbAccent', currentTB.accent); set('tbAccent2', currentTB.accent2);
-  set('tbRadius', currentTB.radius); set('tbName', currentTB.name);
-  document.getElementById('tbBg1Val').textContent = currentTB.bg1;
-  document.getElementById('tbBg2Val').textContent = currentTB.bg2;
-  document.getElementById('tbAccentVal').textContent = currentTB.accent;
-  document.getElementById('tbAccent2Val').textContent = currentTB.accent2;
-  document.getElementById('tbRadiusVal').textContent = currentTB.radius+'px';
-  document.querySelectorAll('.tb-style-btn[data-style]').forEach(b=>b.classList.toggle('active',b.dataset.style===currentTB.style));
-  document.querySelectorAll('.tb-style-btn[data-p]').forEach(b=>b.classList.toggle('active',b.dataset.p===currentTB.particles));
-  document.querySelectorAll('.tb-font-btn').forEach(b=>b.classList.toggle('active',b.dataset.font===currentTB.font));
-  previewTheme();
-  applyCustomTheme();
+  if (!saved[name]) return;
+  tbCurrentTheme = { ...saved[name] };
+  tbPopulateInputs();
+  tbPreview();
+  tbApply();
 }
 
-function deleteSavedTheme(name) {
+function tbDeleteSaved(name) {
   const saved = JSON.parse(localStorage.getItem('stello_saved_themes') || '{}');
   delete saved[name];
   localStorage.setItem('stello_saved_themes', JSON.stringify(saved));
-  renderSavedThemes();
+  tbRenderSaved();
 }
 
-// ── AI THEME GENERATOR ──
-async function generateAITheme() {
+function tbPopulateInputs() {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  const txt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('tbBg1', tbCurrentTheme.bg1);      txt('tbBg1Val', tbCurrentTheme.bg1);
+  set('tbBg2', tbCurrentTheme.bg2);      txt('tbBg2Val', tbCurrentTheme.bg2);
+  set('tbAccent', tbCurrentTheme.accent);txt('tbAccentVal', tbCurrentTheme.accent);
+  set('tbAccent2',tbCurrentTheme.accent2);txt('tbAccent2Val',tbCurrentTheme.accent2);
+  set('tbRadius', tbCurrentTheme.radius);txt('tbRadiusVal', tbCurrentTheme.radius + 'px');
+  set('tbName', tbCurrentTheme.name);
+  document.querySelectorAll('.tb-style-btn[data-style]').forEach(b => b.classList.toggle('active', b.dataset.style === tbCurrentTheme.style));
+  document.querySelectorAll('.tb-style-btn[data-p]').forEach(b => b.classList.toggle('active', b.dataset.p === tbCurrentTheme.particles));
+  document.querySelectorAll('.tb-font-btn').forEach(b => b.classList.toggle('active', b.dataset.font === tbCurrentTheme.font));
+}
+
+// ── AI GENERATOR ──
+async function tbGenerateAI() {
   const prompt = document.getElementById('tbAiPrompt')?.value.trim();
-  if(!prompt) return;
-  const btn = document.getElementById('tbAiGenBtn');
-  const btnText = document.getElementById('tbAiBtnText');
+  if (!prompt) return;
+  const btn = document.getElementById('tbAiBtn');
+  const txt = document.getElementById('tbAiBtnTxt');
   const results = document.getElementById('tbAiResults');
-  if(btn) btn.disabled = true;
-  if(btnText) btnText.innerHTML = '<span class="tb-spin"></span>STELLO is cooking...';
-  if(results) results.style.display = 'none';
+  if (btn) btn.disabled = true;
+  if (txt) txt.innerHTML = '<span class="tb-spin"></span>STELLO is cooking...';
+  if (results) results.style.display = 'none';
 
   try {
     const res = await fetch('/chat', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: `Generate 3 unique UI theme options based on this vibe: "${prompt}"
+        message: `Generate 3 distinct UI theme options for this vibe: "${prompt}"
 
-For each theme, respond in this EXACT JSON format (nothing else, just the JSON array):
+Reply ONLY with a valid JSON array, no markdown, no explanation:
 [
   {
     "name": "Theme Name",
-    "description": "One sentence vibe description",
+    "description": "One sentence vibe",
     "bg1": "#hexcolor",
     "bg2": "#hexcolor",
     "accent": "#hexcolor",
@@ -499,7 +501,7 @@ For each theme, respond in this EXACT JSON format (nothing else, just the JSON a
   }
 ]
 
-Make them visually distinct from each other. Use dark backgrounds unless the vibe is explicitly light. Make accent colors vibrant and beautiful.`,
+Rules: dark backgrounds unless explicitly light. Vibrant accents. All 3 visually distinct.`,
         model: 'openai/gpt-4o-mini',
         mode: 'chat',
         history: [],
@@ -507,15 +509,12 @@ Make them visually distinct from each other. Use dark backgrounds unless the vib
     });
     const data = await res.json();
     const reply = data.reply || '';
-
-    // Parse JSON from reply
     const match = reply.match(/\[[\s\S]*\]/);
-    if(!match) throw new Error('No JSON found');
+    if (!match) throw new Error('no JSON');
     const themes = JSON.parse(match[0]);
 
-    // Render AI theme options
     results.style.display = 'block';
-    results.innerHTML = '<div class="tb-ai-label">✨ Pick one to apply:</div>';
+    results.innerHTML = '<div class="tb-ai-label">✨ Pick one:</div>';
     themes.forEach((t, i) => {
       const card = document.createElement('div');
       card.className = 'tb-ai-card';
@@ -530,109 +529,73 @@ Make them visually distinct from each other. Use dark backgrounds unless the vib
           <div class="tb-ai-tags">
             <span class="tb-ai-tag">${t.style}</span>
             <span class="tb-ai-tag">${t.particles}</span>
-            <span class="tb-ai-tag">${t.font}</span>
           </div>
         </div>
-        <button class="tb-ai-apply" onclick="applyAITheme(${i})">Apply →</button>`;
+        <button class="tb-ai-apply" onclick="tbApplyAI(${i})">Apply →</button>`;
       results.appendChild(card);
     });
-
-    // Store for later apply
-    window._aiThemes = themes;
-
+    window._tbAIThemes = themes;
   } catch(e) {
-    if(results) {
-      results.style.display = 'block';
-      results.innerHTML = '<div style="color:rgba(255,100,100,.8);font-size:12px;font-family:var(--fm)">⚠️ Generation failed. Try a more descriptive prompt.</div>';
-    }
+    results.style.display = 'block';
+    results.innerHTML = '<div style="color:rgba(255,100,100,.8);font-size:12px;font-family:var(--fm)">⚠️ Generation failed. Try a more descriptive prompt.</div>';
   }
-  if(btn) btn.disabled = false;
-  if(btnText) btnText.textContent = '✨ Generate Theme Options';
+  if (btn) btn.disabled = false;
+  if (txt) txt.textContent = '✨ Generate Theme Options';
 }
 
-function applyAITheme(index) {
-  const t = window._aiThemes?.[index];
-  if(!t) return;
-  // Load into builder
-  currentTB = {
-    name: t.name,
-    bg1: t.bg1, bg2: t.bg2,
+function tbApplyAI(i) {
+  const t = window._tbAIThemes?.[i];
+  if (!t) return;
+  tbCurrentTheme = {
+    name: t.name, bg1: t.bg1, bg2: t.bg2,
     accent: t.accent, accent2: t.accent2,
-    style: t.style || 'glass',
-    particles: t.particles || 'dots',
-    font: t.font || 'syne',
-    radius: t.radius || 12,
+    style: t.style || 'glass', particles: t.particles || 'dots',
+    font: t.font || 'syne', radius: t.radius || 12,
   };
-  // Update all inputs
-  const set = (id, val) => { const el=document.getElementById(id); if(el)el.value=val; };
-  set('tbBg1',currentTB.bg1); set('tbBg2',currentTB.bg2);
-  set('tbAccent',currentTB.accent); set('tbAccent2',currentTB.accent2);
-  set('tbRadius',currentTB.radius); set('tbName',currentTB.name);
-  const upd = (id,val) => { const el=document.getElementById(id+'Val'); if(el)el.textContent=val; };
-  upd('tbBg1',currentTB.bg1); upd('tbBg2',currentTB.bg2);
-  upd('tbAccent',currentTB.accent); upd('tbAccent2',currentTB.accent2);
-  const rv = document.getElementById('tbRadiusVal'); if(rv) rv.textContent=currentTB.radius+'px';
-  document.querySelectorAll('.tb-style-btn[data-style]').forEach(b=>b.classList.toggle('active',b.dataset.style===currentTB.style));
-  document.querySelectorAll('.tb-style-btn[data-p]').forEach(b=>b.classList.toggle('active',b.dataset.p===currentTB.particles));
-  document.querySelectorAll('.tb-font-btn').forEach(b=>b.classList.toggle('active',b.dataset.font===currentTB.font));
-  previewTheme();
-  applyCustomTheme();
+  tbPopulateInputs();
+  tbPreview();
+  tbApply();
 }
 
 // ── HELPERS ──
-function hexToRGB(hex) {
+function tbHexRGB(hex) {
   const r = parseInt(hex.slice(1,3),16);
   const g = parseInt(hex.slice(3,5),16);
   const b = parseInt(hex.slice(5,7),16);
   return `${r},${g},${b}`;
 }
-function isLight(hex) {
-  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+function tbIsLight(hex) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
   return (r*299+g*587+b*114)/1000 > 128;
 }
 
 // ── RESTORE CUSTOM THEME ON LOAD ──
-function restoreCustomTheme() {
+function tbRestoreOnLoad() {
   const saved = localStorage.getItem('stello_custom_theme');
-  if(saved && localStorage.getItem('stello_theme')==='custom') {
+  const theme = localStorage.getItem('stello_theme');
+  if (saved && theme === 'custom') {
     try {
-      currentTB = JSON.parse(saved);
-      applyCustomTheme();
+      tbCurrentTheme = JSON.parse(saved);
+      // Don't call tbApply() here — let the original setTheme handle init
+      // Just reapply the vars directly
+      const t = tbCurrentTheme;
+      const preset = TB_STYLE_PRESETS[t.style] || TB_STYLE_PRESETS.glass;
+      const root = document.documentElement;
+      const txColor = tbIsLight(t.bg1) ? '#0a0a0a' : '#f0f0ff';
+      root.setAttribute('data-theme', 'custom');
+      const vars = {
+        '--bg': t.bg1,'--ac': t.accent,'--ac2': t.accent2,
+        '--tx': txColor,'--txm': txColor+'aa','--txd': txColor+'55',
+        '--glow': t.accent+'33','--sg': `linear-gradient(135deg,${t.accent},${t.accent2})`,
+        '--rc': t.radius+'px','--fd': TB_FONTS[t.font]||TB_FONTS.syne,'--st': t.accent2,
+        '--ac-rgb': tbHexRGB(t.accent), ...preset,
+      };
+      Object.entries(vars).forEach(([k,v]) => { if(k !== 'backdrop') root.style.setProperty(k,v); });
+      document.body.style.background = `linear-gradient(135deg,${t.bg1},${t.bg2})`;
     } catch(e) {}
   }
 }
 
-// ── HOOK INTO SETTINGS OPEN ──
-const _origOpenSettings = window.openSettings;
-window.openSettings = function(tab) {
-  _origOpenSettings(tab || 'themes');
-  injectThemeBuilder();
-  if(tab==='builder') {
-    // switch all tabs
-    document.querySelectorAll('.sp-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='builder'));
-    ['themes','models','personality'].forEach(id=>{
-      const el=document.getElementById('tab-'+id);if(el)el.style.display='none';
-    });
-    const bl=document.getElementById('tab-builder');if(bl)bl.style.display='flex';
-  }
-};
-
-// ── OVERRIDE switchTab to handle builder ──
-const _origSwitchTab = window.switchTab;
-window.switchTab = function(tab) {
-  // Always inject builder content first
-  injectThemeBuilder();
-  // Call original for themes/models/personality
-  if(typeof _origSwitchTab === 'function') _origSwitchTab(tab);
-  // Handle builder tab visibility
-  const bl = document.getElementById('tab-builder');
-  if(bl) bl.style.display = tab==='builder' ? 'flex' : 'none';
-  // Mark tab active
-  document.querySelectorAll('.sp-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
-};
-
-// ── INIT ──
-document.addEventListener('DOMContentLoaded', () => {
-  restoreCustomTheme();
-});
-if(document.readyState==='complete') restoreCustomTheme();
+// Init
+if (document.readyState === 'complete') tbRestoreOnLoad();
+else document.addEventListener('DOMContentLoaded', tbRestoreOnLoad);
