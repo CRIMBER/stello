@@ -69,9 +69,10 @@ function tbInject() {
   const panel = document.querySelector('.settings-panel');
   if (!panel) return;
 
-  // Add tab button if missing
+  // Add tab button ONLY if one doesn't already exist in the HTML
   const tabs = panel.querySelector('.sp-tabs');
-  if (tabs && !document.getElementById('tbTabBtn')) {
+  const existingBuilderTab = tabs ? tabs.querySelector('[data-tab="builder"]') : null;
+  if (tabs && !existingBuilderTab) {
     const btn = document.createElement('button');
     btn.className = 'sp-tab';
     btn.id = 'tbTabBtn';
@@ -79,6 +80,12 @@ function tbInject() {
     btn.textContent = '🎨 Builder';
     btn.onclick = () => tbSwitchToBuilder();
     tabs.appendChild(btn);
+  } else if (existingBuilderTab) {
+    // Wire up the hardcoded tab from index.html
+    existingBuilderTab.onclick = () => tbSwitchToBuilder();
+    // Remove any duplicate we may have injected earlier
+    const dupe = document.getElementById('tbTabBtn');
+    if (dupe && dupe !== existingBuilderTab) dupe.remove();
   }
 
   // Add content panel if missing
