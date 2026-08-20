@@ -23,17 +23,18 @@ DEFAULT = "deepseek/deepseek-chat-v3-0324"
 VISION  = {"openai/gpt-4o","google/gemini-2.5-flash","google/gemini-2.0-flash-001","meta-llama/llama-4-maverick"}
 
 CUTSCENE_MAP = {
+    CUTSCENE_MAP = {
     "ink":"cutscene_ink.html","matcha":"cutscene_ink.html",
     "zen-garden":"cutscene_ink.html","vintage-scholar":"cutscene_ink.html",
     "dark-academia":"cutscene_ink.html","skeleton":"cutscene_ink.html",
     "coffee":"cutscene_ink.html","friends":"cutscene_ink.html",
-    "oni":"cutscene_oni.html","sith":"cutscene_oni.html",
-    "breaking-bad":"cutscene_oni.html","stranger-things":"cutscene_oni.html",
-    "dc":"cutscene_oni.html","f1":"cutscene_oni.html",
-    "avengers":"cutscene_oni.html","jungle":"cutscene_oni.html",
-    "space":"cutscene_space.html","starwars":"cutscene_space.html",
-    "cosmic":"cutscene_space.html","mythical":"cutscene_space.html",
-    "harry-potter":"cutscene_space.html","disney":"cutscene_space.html",
+    "oni":"cutscene_ink.html","sith":"cutscene_ink.html",
+    "breaking-bad":"cutscene_ink.html","stranger-things":"cutscene_ink.html",
+    "dc":"cutscene_ink.html","f1":"cutscene_ink.html",
+    "avengers":"cutscene_ink.html","jungle":"cutscene_ink.html",
+    "space":"cutscene_ink.html","starwars":"cutscene_ink.html",
+    "cosmic":"cutscene_ink.html","mythical":"cutscene_ink.html",
+    "harry-potter":"cutscene_ink.html","disney":"cutscene_ink.html",
 }
 
 EGGS = {
